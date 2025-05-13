@@ -116,6 +116,14 @@
             }
 
             const selectores = [
+                '#kt_modal_create_account > div > div > div.modal-header',
+                '#kt_create_account_stepper > div.stepper-nav.py-5',
+                '#nuevo_seguimiento > div.page_1.current > div > div > div > div.col-lg-5',
+                '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(6)',
+                '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(8)',
+                '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(10) > div > label',
+                'textarea[name="bus_obs"]#observaciones',
+                '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(11)',
                 '#register_search',
                 '#kt_create_account_stepper > div.d-flex.flex-stack.pt-15',
                 '#nuevoCliente',
