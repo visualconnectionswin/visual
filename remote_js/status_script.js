@@ -18,7 +18,7 @@
   const hoyLocal = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
 
   // 3) Calcular “hace 3 meses” manteniendo día o último día del mes
-  const desdeCandidate = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate());
+  const desdeCandidate = new Date(ahora.getFullYear(), ahora.getMonth() - 2, ahora.getDate());
   const expectedMonth = (ahora.getMonth() + 12 - 3) % 12;
   let desdeLocal = desdeCandidate;
   if (desdeCandidate.getMonth() !== expectedMonth) {
