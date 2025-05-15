@@ -8,9 +8,11 @@
         :root {
             --primary-color: #FF5A00;
             --secondary-color: #FFB300;
-            --dark-color: #333333;
+            --accent-color: #0078D7;
+            --dark-color: #222222;
             --light-color: #FFFFFF;
-            --background-color: #F5F5F5;
+            --background-color: #F8F9FA;
+            --header-height: 60px;
         }
 
         * {
@@ -26,85 +28,112 @@
             line-height: 1.6;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            width: 100%;
+            padding: 0;
+            position: relative;
         }
 
         header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             color: var(--light-color);
-            padding: 20px 0;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
         }
 
-        h1 {
-            font-size: 2.5em;
-            margin: 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .subtitle {
-            font-size: 1.2em;
-            margin-top: 10px;
+            font-size: 0.9em;
             opacity: 0.9;
+            margin-left: 10px;
         }
 
-        /* Carousel Styles */
+        /* Main Content Area */
+        .main-content {
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height) - 50px); /* Subtract header and footer */
+        }
+
+        /* Carousel Styles - Enhanced */
         .carousel-container {
-            margin: 30px auto;
-            padding: 20px 0;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            height: calc(100vh - var(--header-height) - 80px);
+            min-height: 300px;
+            overflow: hidden;
         }
 
         .carousel {
             position: relative;
             width: 100%;
-            max-width: 800px;
+            height: 100%;
             margin: 0 auto;
-            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .carousel-images {
             display: flex;
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            height: 100%;
+            transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         .carousel-images img {
             width: 100%;
-            height: auto;
+            height: 100%;
             object-fit: cover;
             flex-shrink: 0;
+            transition: transform 0.3s ease, filter 0.3s ease;
         }
 
         .carousel-button {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            width: 45px;
-            height: 45px;
-            background-color: rgba(255, 255, 255, 0.8);
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.2);
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 20px;
-            color: var(--primary-color);
+            font-size: 22px;
+            color: var(--light-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             z-index: 10;
+            backdrop-filter: blur(3px);
         }
 
         .carousel-button:hover {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: rgba(255, 90, 0, 0.7);
+            transform: translateY(-50%) scale(1.1);
         }
 
         .carousel-button.left {
@@ -115,114 +144,203 @@
             right: 15px;
         }
 
-        /* Indicators */
+        /* Enhanced Indicators with thumbnails */
         .carousel-indicators {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             justify-content: center;
-            margin-top: 15px;
+            z-index: 20;
+            gap: 8px;
         }
 
         .indicator {
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background-color: #ccc;
-            margin: 0 5px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.7);
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .indicator.active {
             background-color: var(--primary-color);
+            transform: scale(1.2);
+            border-color: var(--light-color);
         }
 
-        /* Information Section */
+        /* Information Section - Minimized */
         .info-section {
             background-color: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 30px auto;
-            max-width: 800px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 15px 20px;
+            margin: 0;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
         }
 
         .info-section h2 {
             color: var(--primary-color);
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 1.2em;
+            position: relative;
+            display: inline-block;
+        }
+
+        .info-section h2:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 40px;
+            height: 3px;
+            background: var(--secondary-color);
         }
 
         .info-section p {
-            margin-bottom: 15px;
+            margin-bottom: 0;
+            font-size: 0.95em;
+            line-height: 1.5;
+            color: #555;
         }
 
         footer {
             text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: #666;
-            font-size: 14px;
+            padding: 12px;
+            color: #888;
+            font-size: 0.8em;
+            background-color: #f1f1f1;
+            border-top: 1px solid #e0e0e0;
         }
 
-        /* Loading Animation */
+        /* Loading Animation - Enhanced */
         .loading {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 300px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 90, 0, 0.1);
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 90, 0, 0.1);
             border-radius: 50%;
             border-top-color: var(--primary-color);
-            animation: spin 1s ease-in-out infinite;
+            border-bottom-color: var(--secondary-color);
+            animation: spin 1.2s ease-in-out infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* Toast notification */
+        /* Enhanced Toast notification */
         .toast {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 12px 24px;
+            border-radius: 30px;
             z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        /* Responsive */
+        /* Fade animations for carousel */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s forwards;
+        }
+
+        /* Progress bar for autoplay timing */
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.3);
+            z-index: 15;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--primary-color);
+            transition: width linear;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            h1 {
-                font-size: 2em;
-            }
-            
             .carousel-button {
                 width: 40px;
                 height: 40px;
+                font-size: 18px;
             }
+            
+            .indicator {
+                width: 10px;
+                height: 10px;
+            }
+            
+            .carousel-container {
+                height: calc(100vh - var(--header-height) - 100px);
+            }
+        }
+
+        /* Landscape mode optimization */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .carousel-container {
+                height: calc(100vh - var(--header-height) - 40px);
+            }
+            
+            .info-section {
+                padding: 10px 15px;
+            }
+            
+            .info-section p {
+                font-size: 0.85em;
+            }
+            
+            footer {
+                padding: 8px;
+            }
+        }
+
+        /* Image Zoom Effect on Hover */
+        .zoom-effect img {
+            transition: transform 0.5s ease;
+        }
+
+        .zoom-effect:hover img {
+            transform: scale(1.05);
         }
     </style>
     <script>
         let currentIndex = 0;
         let images = [];
+        let autoplayDuration = 5000; // 5 seconds
+        let progressInterval;
+        let progressValue = 0;
         
         async function loadImages() {
             try {
                 document.getElementById('carousel-container').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
                 
+                // Fetch images from your JSON file
                 const response = await fetch('https://raw.githubusercontent.com/visualconnectionswin/visual/refs/heads/main/imagenes_win.json');
                 const data = await response.json();
                 images = data.images;
@@ -230,20 +348,23 @@
                 if(images && images.length > 0) {
                     document.getElementById('carousel-container').innerHTML = `
                         <div class="carousel">
-                            <div class="carousel-images"></div>
+                            <div class="carousel-images zoom-effect"></div>
                             <button class="carousel-button left" onclick="prevImage()">&#10094;</button>
                             <button class="carousel-button right" onclick="nextImage()">&#10095;</button>
+                            <div class="carousel-indicators" id="carousel-indicators"></div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="progress-bar"></div>
+                            </div>
                         </div>
-                        <div class="carousel-indicators" id="carousel-indicators"></div>
                     `;
                     
                     initCarousel();
                 } else {
-                    document.getElementById('carousel-container').innerHTML = '<p>No se pudieron cargar las imágenes</p>';
+                    document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar las imágenes</p>';
                 }
             } catch(error) {
                 console.error('Error loading images:', error);
-                document.getElementById('carousel-container').innerHTML = '<p>Error al cargar las imágenes: ' + error.message + '</p>';
+                document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">Error al cargar las imágenes: ' + error.message + '</p>';
             }
         }
         
@@ -260,6 +381,7 @@
                 const img = document.createElement('img');
                 img.src = image;
                 img.alt = 'Imagen WIN ' + (index + 1);
+                img.className = index === 0 ? 'fade-in' : '';
                 carouselImages.appendChild(img);
                 
                 // Create indicator for this image
@@ -281,9 +403,20 @@
         function showImage(index) {
             const carouselImages = document.querySelector('.carousel-images');
             const indicators = document.querySelectorAll('.indicator');
+            const allImages = carouselImages.querySelectorAll('img');
             
             // Update image position
             carouselImages.style.transform = 'translateX(' + (-index * 100) + '%)';
+            
+            // Apply fade-in effect to current image
+            allImages.forEach((img, i) => {
+                img.classList.remove('fade-in');
+                if (i === index) {
+                    // Force a reflow before adding the class again
+                    void img.offsetWidth;
+                    img.classList.add('fade-in');
+                }
+            });
             
             // Update indicators
             indicators.forEach((indicator, i) => {
@@ -292,6 +425,9 @@
             
             // Update current index
             currentIndex = index;
+            
+            // Reset progress bar
+            resetProgressBar();
         }
         
         function nextImage() {
@@ -309,25 +445,60 @@
         }
         
         function goToImage(index) {
+            if (index === currentIndex) return;
             stopAutoplay();
             showImage(index);
             startAutoplay();
         }
         
-        // Autoplay functionality
+        // Enhanced Autoplay functionality with visual progress bar
         let autoplayInterval;
         
         function startAutoplay() {
             stopAutoplay(); // Clear any existing intervals
+            
+            // Start the progress bar
+            resetProgressBar();
+            startProgressBar();
+            
             autoplayInterval = setInterval(() => {
                 nextImage();
-            }, 5000); // Change image every 5 seconds
+            }, autoplayDuration);
         }
         
         function stopAutoplay() {
             if(autoplayInterval) {
                 clearInterval(autoplayInterval);
             }
+            if(progressInterval) {
+                clearInterval(progressInterval);
+            }
+        }
+        
+        function resetProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+                progressValue = 0;
+            }
+        }
+        
+        function startProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            if (!progressBar) return;
+            
+            progressValue = 0;
+            const updateFrequency = 30; // Update every 30ms for smooth animation
+            const incrementValue = (updateFrequency / autoplayDuration) * 100;
+            
+            progressInterval = setInterval(() => {
+                progressValue += incrementValue;
+                if (progressValue >= 100) {
+                    progressValue = 100;
+                    clearInterval(progressInterval);
+                }
+                progressBar.style.width = progressValue + '%';
+            }, updateFrequency);
         }
         
         // Función para copiar coordenadas (mantenida por compatibilidad)
@@ -350,82 +521,136 @@
         }
         
         function showToast(message) {
+            // Remove any existing toasts
+            const existingToasts = document.querySelectorAll('.toast');
+            existingToasts.forEach(toast => document.body.removeChild(toast));
+            
             const toast = document.createElement('div');
             toast.className = 'toast';
             toast.innerText = message;
-            toast.style.opacity = '1';
-            toast.style.transition = 'opacity 0.5s ease';
             
             document.body.appendChild(toast);
+            
+            // Force a reflow before starting the transition
+            void toast.offsetWidth;
+            toast.style.opacity = '1';
             
             setTimeout(() => {
                 toast.style.opacity = '0';
                 setTimeout(() => {
-                    document.body.removeChild(toast);
-                }, 500);
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
             }, 2000);
         }
         
-        // Touch events for mobile swiping
+        // Enhanced Touch events for mobile swiping with better detection
         let touchStartX = 0;
         let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+        let isSwiping = false;
         
         function handleTouchStart(event) {
             touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+            isSwiping = true;
         }
         
         function handleTouchMove(event) {
+            if (!isSwiping) return;
+            
             touchEndX = event.touches[0].clientX;
+            touchEndY = event.touches[0].clientY;
+            
+            // Calculate horizontal and vertical distance
+            const xDiff = touchStartX - touchEndX;
+            const yDiff = touchStartY - touchEndY;
+            
+            // If horizontal swipe is more significant than vertical
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                // Prevent default to stop page scrolling during swipe
+                event.preventDefault();
+            }
         }
         
-        function handleTouchEnd() {
-            if (touchStartX - touchEndX > 50) {
-                // Swipe left
-                nextImage();
+        function handleTouchEnd(event) {
+            if (!isSwiping) return;
+            
+            const xDiff = touchStartX - touchEndX;
+            const yDiff = touchStartY - touchEndY;
+            
+            // Only trigger if it's primarily a horizontal swipe
+            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 30) {
+                if (xDiff > 0) {
+                    // Swipe left - next image
+                    nextImage();
+                } else {
+                    // Swipe right - previous image
+                    prevImage();
+                }
             }
             
-            if (touchEndX - touchStartX > 50) {
-                // Swipe right
-                prevImage();
+            isSwiping = false;
+        }
+        
+        // Check if device is in landscape mode and optimize layout
+        function checkOrientation() {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            document.body.classList.toggle('landscape', isLandscape);
+            
+            // Adjust carousel height based on orientation
+            const carouselContainer = document.querySelector('.carousel-container');
+            if (carouselContainer) {
+                if (isLandscape && window.innerHeight < 500) {
+                    carouselContainer.style.height = 'calc(100vh - var(--header-height) - 40px)';
+                } else {
+                    carouselContainer.style.height = 'calc(100vh - var(--header-height) - 80px)';
+                }
             }
         }
         
         // Initialize everything when the window loads
         window.onload = function() {
             loadImages();
+            checkOrientation();
             
             // Add touch event listeners for mobile swiping
-            document.addEventListener('touchstart', handleTouchStart, false);
-            document.addEventListener('touchmove', handleTouchMove, false);
-            document.addEventListener('touchend', handleTouchEnd, false);
+            document.addEventListener('touchstart', handleTouchStart, { passive: false });
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd, { passive: true });
+            
+            // Listen for orientation changes
+            window.addEventListener('resize', checkOrientation);
         };
     </script>
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1>Bienvenido a WIN</h1>
-            <p class="subtitle">Conéctate con lo mejor</p>
+        <div class="header-content">
+            <div class="logo">WIN</div>
+            <div class="subtitle">Conéctate con lo mejor</div>
         </div>
     </header>
     
-    <div class="container">
-        <div id="carousel-container" class="carousel-container">
-            <div class="loading">
-                <div class="spinner"></div>
+    <div class="main-content">
+        <div class="container">
+            <div id="carousel-container" class="carousel-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
             </div>
-        </div>
-        
-        <div class="info-section">
-            <h2>Acerca de WIN</h2>
-            <p>Somos una empresa de telecomunicaciones peruana que desde el 2017 tiene como principal compromiso brindar un servicio de calidad a la comunidad Winner, con una conexión a internet hogar 100% fibra óptica (FTTH) con velocidades de hasta 1000 Mbps, servicio de telefonía fija y televisión digital.</p>            
+            
+            <div class="info-section">
+                <h2>Acerca de WIN</h2>
+                <p>Somos una empresa de telecomunicaciones peruana que desde el 2017 brinda servicio de internet hogar 100% fibra óptica (FTTH) con velocidades de hasta 1000 Mbps, telefonía fija y televisión digital.</p>            
+            </div>
         </div>
     </div>
     
     <footer>
-        <div class="container">
-            <p>&copy; 2025 WIN - Todos los derechos reservados</p>
-        </div>
+        <p>&copy; 2025 WIN - Todos los derechos reservados</p>
     </footer>
 </body>
 </html>
