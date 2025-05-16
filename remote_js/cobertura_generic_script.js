@@ -85,7 +85,7 @@
         if (ZONA_F_POLYGONS.length > 0) {
             updateZonaFLoadStatusMessage(`Datos de Zona F listos (${ZONA_F_POLYGONS.length} polígonos).`, 'success');
         } else {
-            updateZonaFLoadStatusMessage('Datos de Zona F están vacíos (ZONA_F_POLYGONS_DATA existe pero sin polígonos).', 'info');
+            updateZonaFLoadStatusMessage('Datos de Zona F están vacíos.', 'info');
         }
     } else {
         nativeLog('ERROR CRÍTICO: ZONA_F_POLYGONS_DATA no está definida o no es un array.');
@@ -93,50 +93,62 @@
         ZONA_F_POLYGONS = []; 
     }
 
-    function isPointInPolygon(point, polygon) {
-        // point es [longitude, latitude]
-        // polygon es un array de [longitude, latitude]
-        if (!point || !Array.isArray(point) || point.length !== 2 || 
-            typeof point[0] !== 'number' || typeof point[1] !== 'number' ||
-            !polygon || !Array.isArray(polygon) || polygon.length < 3) {
-            nativeLog(`isPointInPolygon: Entrada inválida. Punto: ${JSON.stringify(point)}, Polígono tiene ${polygon ? polygon.length : 'null'} vértices.`);
+    function isPointInPolygon(point, polygon, polygonIndex) { // Añadido polygonIndex para logging
+        if (!point || !Array.isArray(point) || point.length !== 2 || !polygon || !Array.isArray(polygon) || polygon.length < 3) {
+            nativeLog(`isPointInPolygon (Poly #${polygonIndex}): Entrada inválida. Punto: ${JSON.stringify(point)}, Polígono: ${JSON.stringify(polygon)}`);
             return false;
         }
-        const pX = point[0]; // Longitud del punto
-        const pY = point[1]; // Latitud del punto
+        const x = point[0]; // Longitude
+        const y = point[1]; // Latitude
         let isInside = false;
-
-        // nativeLog(`isPointInPolygon: Verificando punto (Lon: ${pX}, Lat: ${pY})`);
+        // nativeLog(`isPointInPolygon (Poly #${polygonIndex}): Verificando punto (lon: ${x}, lat: ${y})`);
 
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const vXi = polygon[i][0]; // Longitud del vértice i
-            const vYi = polygon[i][1]; // Latitud del vértice i
-            const vXj = polygon[j][0]; // Longitud del vértice j
-            const vYj = polygon[j][1]; // Latitud del vértice j
-
-            if (typeof vXi !== 'number' || typeof vYi !== 'number' || typeof vXj !== 'number' || typeof vYj !== 'number') {
-                nativeLog(`isPointInPolygon: Vértice no numérico encontrado. i:[${vXi},${vYi}], j:[${vXj},${vYj}]`);
-                continue;
+            if (!Array.isArray(polygon[i]) || polygon[i].length !== 2 || !Array.isArray(polygon[j]) || polygon[j].length !== 2) {
+                nativeLog(`isPointInPolygon (Poly #${polygonIndex}): Vértice inválido. V_i: ${JSON.stringify(polygon[i])}, V_j: ${JSON.stringify(polygon[j])}`);
+                continue; 
             }
+            const xi = polygon[i][0]; 
+            const yi = polygon[i][1]; 
+            const xj = polygon[j][0]; 
+            const yj = polygon[j][1]; 
 
-            // nativeLog(`  Vértice ${i}: [${vXi}, ${vYi}], Vértice ${j}: [${vXj}, ${vYj}]`);
+            // nativeLog(`  Poly #${polygonIndex}, Vértice i(${i}): [${xi}, ${yi}], Vértice j(${j}): [${xj}, ${yj}]`);
 
-            // Condición de cruce del rayo horizontal
-            const crossesHorizontalRay = ((vYi > pY) !== (vYj > pY));
+            const term1 = (yi > y);
+            const term2 = (yj > y);
+            // nativeLog(`    (yi > y): ${yi} > ${y} = ${term1}`);
+            // nativeLog(`    (yj > y): ${yj} > ${y} = ${term2}`);
+            // nativeLog(`    ((yi > y) !== (yj > y)): ${term1 !== term2}`);
             
-            // Condición de que el punto esté a la izquierda de la arista
-            // (vXj - vXi) * (pY - vYi) / ((vYj - vYi) || 1e-9) + vXi  es la coordenada X de la intersección del rayo con la arista
-            const intersectionX = (vXj - vXi) * (pY - vYi) / ((vYj - vYi) || 1e-9) + vXi;
-            const pointIsLeftOfEdge = (pX < intersectionX);
+            const denominator = (yj - yi);
+            const slopeTerm = (xj - xi) * (y - yi);
+            let xIntersection;
+            if (denominator === 0) { // Segmento horizontal
+                // nativeLog(`    Segmento horizontal (yj - yi === 0). yi=${yi}, y=${y}`);
+                // Para que un segmento horizontal intersecte, y debe ser igual a yi (o yj)
+                // y x debe estar entre xi y xj.
+                // Esta condición ya está cubierta por (yi > y) !== (yj > y) siendo falso si y === yi.
+                // Si el punto está exactamente en un borde horizontal, este algoritmo puede ser ambiguo.
+                // Sin embargo, la fórmula general con `|| 1e-9` debería manejarlo.
+                xIntersection = x + 1; // Forzar a que no intersecte si el rayo es colineal horizontalmente
+                                   // o hacer una comprobación más específica si se quiere incluir bordes.
+                                   // Con `|| 1e-9`, esto no debería ser un problema grave.
+            } else {
+                xIntersection = slopeTerm / denominator + xi;
+            }
+            // nativeLog(`    x_intersection_calc = (${xj} - ${xi}) * (${y} - ${yi}) / (${denominator || 1e-9}) + ${xi} = ${xIntersection}`);
+            // nativeLog(`    (x < x_intersection): ${x} < ${xIntersection} = ${x < xIntersection}`);
 
-            // nativeLog(`    crossesHorizontalRay: ${crossesHorizontalRay}, intersectionX: ${intersectionX.toFixed(6)}, pointIsLeftOfEdge: ${pointIsLeftOfEdge}`);
 
-            if (crossesHorizontalRay && pointIsLeftOfEdge) {
+            const intersect = (term1 !== term2) && (x < (xj - xi) * (y - yi) / (denominator || 1e-9) + xi);
+            
+            if (intersect) {
+                // nativeLog(`    INTERSECCIÓN! old isInside=${isInside}, new isInside=${!isInside}`);
                 isInside = !isInside;
-                // nativeLog(`    INTERSECCIÓN! isInside ahora es: ${isInside}`);
             }
         }
-        // nativeLog(`isPointInPolygon: Resultado final para este polígono: ${isInside}`);
+        // nativeLog(`isPointInPolygon (Poly #${polygonIndex}): Resultado final: ${isInside}`);
         return isInside;
     }
 
@@ -153,43 +165,26 @@
             nativeLog('No hay polígonos de Zona F definidos.');
             return { text: "Sin Zonas F", color: "GoldenRod", shortText: "N/A" };
         }
-
-        // --- PRUEBA HARDCODEADA (DESCOMENTAR PARA PROBAR UN PUNTO CONOCIDO) ---
-        // Asegúrate que este punto esté DENTRO de uno de tus 27 polígonos
-        // Por ejemplo, si tu primer polígono es:
-        // [[-76.9483412, -12.160958], [-76.9478155, -12.161797], [-76.9473595, -12.1615296], [-76.9479013, -12.1607168], [-76.9483412, -12.160958]]
-        // Un punto dentro podría ser: longitude = -76.9479, latitude = -12.1610
-        //
-        // longitude = -76.9479; // Ejemplo
-        // latitude = -12.1610;  // Ejemplo
-        // nativeLog(`--- USANDO PUNTO HARDCODEADO PARA PRUEBA: Lon=${longitude}, Lat=${latitude} ---`);
-        // --- FIN PRUEBA HARDCODEADA ---
-
         const currentPoint = [longitude, latitude]; 
         nativeLog(`Verificando: Lon=${currentPoint[0]}, Lat=${currentPoint[1]} vs ${ZONA_F_POLYGONS.length} polígonos.`);
-        
         for (let i = 0; i < ZONA_F_POLYGONS.length; i++) {
             const polygon = ZONA_F_POLYGONS[i];
-            // nativeLog(`  Evaluando Polígono #${i}: ${JSON.stringify(polygon)}`);
             if (Array.isArray(polygon) && polygon.length >= 3) {
                 let polygonIsValid = true;
                 for(let k=0; k < polygon.length; k++) {
                     if (!Array.isArray(polygon[k]) || polygon[k].length !== 2 || typeof polygon[k][0] !== 'number' || typeof polygon[k][1] !== 'number') {
-                        nativeLog(`  Advertencia: Vértice inválido en polígono F #${i}, vtx #${k}: ${JSON.stringify(polygon[k])}`);
+                        nativeLog(`Advertencia: Vértice inválido en polígono F #${i}, vtx #${k}: ${JSON.stringify(polygon[k])}`);
                         polygonIsValid = false;
                         break;
                     }
                 }
-                if (!polygonIsValid) {
-                    nativeLog(`  Polígono #${i} tiene vértices inválidos, saltando.`);
-                    continue; 
-                }
-                if (isPointInPolygon(currentPoint, polygon)) {
+                if (!polygonIsValid) continue; 
+                if (isPointInPolygon(currentPoint, polygon, i)) { // Pasar 'i' como polygonIndex
                     nativeLog(`Punto DENTRO del polígono F #${i}.`);
                     return { text: "DENTRO Zona F", color: "red", shortText: "ZF!" };
                 }
             } else {
-                nativeLog(`  Advertencia: Polígono F #${i} inválido (no es array o tiene <3 puntos).`);
+                nativeLog(`Advertencia: Polígono F #${i} inválido.`);
             }
         }
         nativeLog(`Punto FUERA de todas las zonas F.`);
@@ -212,7 +207,6 @@
     setTimeout(function() {
         nativeLog('Ejecutando lógica principal después del delay...');
 
-        // === INICIO: Insertar campo combinado "Lat, Lon" y llenarlo ===
         try {
             const lonElem = document.querySelector('#gf_lon');
             if (lonElem) {
@@ -247,11 +241,9 @@
                 nativeLog('WARN: No se encontró el elemento #gf_lon para insertar/llenar gf_latlon.');
             }
         } catch(e) {
-            nativeLog('ERROR añadiendo/llenando campo combinado (con coords): ' + e.message);
+            nativeLog('ERROR añadiendo/llenando campo combinado: ' + e.message);
         }
-        // === FIN: Insertar campo combinado ===
-
-        // 2. Eliminar elementos estáticos no deseados
+        
         const selectoresAEliminar = [
             '#kt_modal_create_account > div > div > div.modal-header',
             '#kt_header',
@@ -268,9 +260,7 @@
                 nativeLog('ERROR eliminando selector estático: ' + selector + ' - ' + e.message);
             }
         });
-        // === FIN: Eliminar elementos estáticos no deseados ===
-
-        // 3. Lógica de obtención de coordenadas y creación de botones
+        
         function obtenerCoordenadas() {
             try {
                 const latInput = document.querySelector('#ltdir');
@@ -327,42 +317,41 @@
                 zonaFIndicatorElement.id = 'zonaFStatusIndicator';
                 zonaFIndicatorElement.textContent = '?'; 
                 zonaFIndicatorElement.style.backgroundColor = 'grey'; 
-                zonaFIndicatorElement.title = 'Zona F: Pendiente';
-                zonaFIndicatorElement.style.cssText += `
-                    width: 24px; height: 24px; border-radius: 50%;
-                    margin-right: 5px; 
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 10px; color: white; font-weight: bold;
-                    border: 1px solid #555;
-                    flex-shrink: 0; 
-                    box-sizing: border-box; 
-                `;
+                zonaFIndicatorElement.title = 'Zona F: Pendiente de validación';
+                // Aplicar otros estilos sin sobreescribir los anteriores
+                Object.assign(zonaFIndicatorElement.style, {
+                    width: '24px', height: '24px', borderRadius: '50%',
+                    marginRight: '5px', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', color: 'white', fontWeight: 'bold',
+                    border: '1px solid #555',
+                    flexShrink: '0', 
+                    boxSizing: 'border-box'
+                });
                 container.appendChild(zonaFIndicatorElement);
 
                 const botonValidarZonaF = document.createElement('button');
                 botonValidarZonaF.id = 'botonValidarZonaFNativo';
                 botonValidarZonaF.textContent = 'Validar ZF'; 
                 botonValidarZonaF.type = 'button';
-                botonValidarZonaF.style.cssText = `
-                    padding: 8px 10px; 
-                    background-color: #ffc107; 
-                    color: #212529;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 13px;
-                    flex-shrink: 0;
-                `;
+                Object.assign(botonValidarZonaF.style, {
+                    padding: '8px 10px', 
+                    backgroundColor: '#ffc107', 
+                    color: '#212529',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    flexShrink: '0'
+                });
                 botonValidarZonaF.addEventListener('click', function() {
                     const coordsParaValidar = obtenerCoordenadas(); 
                     const indicator = document.getElementById('zonaFStatusIndicator');
-
                     if (coordsParaValidar && indicator) {
                         nativeLog('Botón Validar ZF: Evaluando Zona F para lng: ' + coordsParaValidar.lng + ', lat: ' + coordsParaValidar.lat);
                         indicator.textContent = '...'; 
                         indicator.style.backgroundColor = 'orange';
                         indicator.title = 'Evaluando Zona F...';
-
                         setTimeout(() => {
                             const status = checkZonaFStatus(coordsParaValidar.lng, coordsParaValidar.lat);
                             const currentIndicator = document.getElementById('zonaFStatusIndicator'); 
@@ -388,16 +377,16 @@
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
                 botonCopiar.textContent = 'Copiar Coords'; 
                 botonCopiar.type = 'button';
-                botonCopiar.style.cssText = `
-                    padding: 8px 10px;
-                    background-color: #007bff;
-                    color: #fff;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 13px;
-                    flex-shrink: 0;
-                `;
+                Object.assign(botonCopiar.style, {
+                    padding: '8px 10px',
+                    backgroundColor: '#007bff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    flexShrink: '0'
+                });
                 botonCopiar.addEventListener('click', function() {
                     const c = obtenerCoordenadas(); 
                     if (c) {
@@ -429,11 +418,9 @@
             }
         }
 
-
         nativeLog('Iniciando monitorización de coordenadas/estado (gestionarBotones)...');
-        setInterval(gestionarBotones, 700); 
+        setInterval(gestionarBotones, 700);
 
-        // ... (resto del código de simulación)
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
@@ -443,30 +430,25 @@
             nativeLog("Inicia simulación");
             const btn = document.getElementById(SIMULATION_BUTTON_ID);
             if (btn) btn.disabled = true;
-
             try {
                 const ide = document.querySelector('#ide_cli');
                 if (!ide.value) {
                     nativeLog("No hay ID cliente, haciendo click en nuevoCliente");
                     const nuevoClienteBtn = document.querySelector('#nuevoCliente');
                     if (nuevoClienteBtn) nuevoClienteBtn.click();
-
                     setTimeout(() => {
                         const cliTel = document.querySelector('#cli_tel1');
                         const cliEmail = document.querySelector('#cli_email');
-
                         if (cliTel) {
                             cliTel.value = '999999999';
                             cliTel.dispatchEvent(new Event('change', {bubbles: true}));
                             nativeLog("Teléfono completado");
                         }
-
                         if (cliEmail) {
                             cliEmail.value = 'demopruebadanna@gmail.com';
                             cliEmail.dispatchEvent(new Event('change', {bubbles: true}));
                             nativeLog("Email completado");
                         }
-
                         setTimeout(() => {
                             const addCustomerBtn = document.querySelector('#add_customer_data');
                             if (addCustomerBtn) {
@@ -478,7 +460,6 @@
                 } else {
                     nativeLog("ID cliente ya existe: " + ide.value);
                 }
-
                 setTimeout(() => {
                     const checkTratamiento = document.querySelector('#checkTratamientoDatos');
                     if (checkTratamiento && !checkTratamiento.checked) {
@@ -486,21 +467,18 @@
                         checkTratamiento.dispatchEvent(new Event('change', {bubbles: true}));
                         nativeLog("Check tratamiento datos activado");
                     }
-
                     const tipoServicio = document.querySelector('#tipo_servicio');
                     if (tipoServicio) {
                         tipoServicio.value = '1';
                         tipoServicio.dispatchEvent(new Event('change', {bubbles: true}));
                         nativeLog("Tipo servicio seleccionado");
                     }
-
                     const relacionPredio = document.querySelector('#relacionPredio');
                     if (relacionPredio) {
                         relacionPredio.value = '2';
                         relacionPredio.dispatchEvent(new Event('change', {bubbles: true}));
                         nativeLog("Relación predio seleccionada");
                     }
-
                     const tipoInteres = document.querySelector('#tipoInteres');
                     if (tipoInteres) {
                         const options = Array.from(tipoInteres.options);
@@ -511,7 +489,6 @@
                             nativeLog("Tipo interés seleccionado: Venta");
                         }
                     }
-
                     const agencia = document.querySelector('#agencia');
                     if (agencia) {
                         const options = Array.from(agencia.options);
@@ -522,20 +499,17 @@
                             nativeLog("Agencia seleccionada: " + VENDOR_NAME);
                         }
                     }
-
                     setTimeout(() => {
                         const registerSearch = document.querySelector('#register_search');
                         if (registerSearch) {
                             registerSearch.click();
                             nativeLog("Click en register_search");
-
                             setTimeout(() => {
                                 const swalConfirm = document.querySelector('button.swal2-confirm.swal2-styled');
                                 if (swalConfirm) {
                                     swalConfirm.click();
                                     nativeLog("Click automático en Ok confirmación");
                                 }
-
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
