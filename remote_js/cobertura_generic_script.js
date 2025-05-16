@@ -8,7 +8,7 @@
         }
     }
 
-    nativeLog('Iniciando ejecución...');
+    nativeLog('Iniciando ejecución del script principal de Cobertura...');
 
     // --- INICIO: Utilidad para mensajes en página sobre carga de Zona F ---
     let zonaFLoadStatusDiv = null;
@@ -40,13 +40,6 @@
         const appendToBody = () => {
             if(document.body) {
                 document.body.appendChild(zonaFLoadStatusDiv);
-                // Opcional: hacer que el mensaje desaparezca después de un tiempo si es de éxito o info
-                // setTimeout(() => {
-                //     if (zonaFLoadStatusDiv && (zonaFLoadStatusDiv.style.borderColor === 'rgb(195, 230, 203)' || zonaFLoadStatusDiv.style.borderColor === 'rgb(184, 218, 255)')) { // Success or Info
-                //         zonaFLoadStatusDiv.style.opacity = '0';
-                //         setTimeout(() => { if(zonaFLoadStatusDiv) zonaFLoadStatusDiv.remove(); }, 500);
-                //     }
-                // }, 10000); // Desaparece después de 10 segundos si no es error
             } else {
                 setTimeout(appendToBody, 100);
             }
@@ -54,16 +47,16 @@
         appendToBody();
     }
 
-    function updateZonaFLoadStatusMessage(message, type = 'info') { // type: 'info', 'success', 'error'
+    function updateZonaFLoadStatusMessage(message, type = 'info') { 
         ensureZonaFLoadStatusDiv(); 
         if (zonaFLoadStatusDiv) {
             zonaFLoadStatusDiv.textContent = message;
-            zonaFLoadStatusDiv.style.opacity = '0.95'; // Reset opacity if it was faded
+            zonaFLoadStatusDiv.style.opacity = '0.95'; 
             switch(type) {
                 case 'success':
                     zonaFLoadStatusDiv.style.color = '#155724';
                     zonaFLoadStatusDiv.style.backgroundColor = '#d4edda';
-                    zonaFLoadStatusDiv.style.borderColor = '#c3e6cb'; // rgb(195, 230, 203)
+                    zonaFLoadStatusDiv.style.borderColor = '#c3e6cb';
                     break;
                 case 'error':
                     zonaFLoadStatusDiv.style.color = '#721c24';
@@ -74,83 +67,49 @@
                 default:
                     zonaFLoadStatusDiv.style.color = '#004085';
                     zonaFLoadStatusDiv.style.backgroundColor = '#cce5ff';
-                    zonaFLoadStatusDiv.style.borderColor = '#b8daff'; // rgb(184, 218, 255)
+                    zonaFLoadStatusDiv.style.borderColor = '#b8daff';
                     break;
             }
         }
-        nativeLog('Zona F Load Info: ' + message); // Log para Android Studio
+        nativeLog('Zona F Info (desde script principal): ' + message);
     }
     // --- FIN: Utilidad para mensajes en página sobre carga de Zona F ---
 
 
     // --- INICIO: Lógica de Zona F ---
-    let ZONA_F_POLYGONS = null;
-    let zonaFPolygonsLoadingPromise = null;
+    let ZONA_F_POLYGONS = null; 
 
-    function loadZonaFPolygons() {
-        if (zonaFPolygonsLoadingPromise) {
-            return zonaFPolygonsLoadingPromise;
+    // Inicializar ZONA_F_POLYGONS directamente desde ZONA_F_POLYGONS_DATA
+    // que se asume ya está definida porque el script de datos (zona_f_data_script.js)
+    // se inyectó ANTES que este script principal.
+    if (typeof ZONA_F_POLYGONS_DATA !== 'undefined' && Array.isArray(ZONA_F_POLYGONS_DATA)) {
+        ZONA_F_POLYGONS = ZONA_F_POLYGONS_DATA;
+        nativeLog('Datos de Zona F (ZONA_F_POLYGONS_DATA) encontrados y asignados. Cantidad: ' + ZONA_F_POLYGONS.length);
+        if (ZONA_F_POLYGONS.length > 0) {
+            updateZonaFLoadStatusMessage(`Datos de Zona F listos (${ZONA_F_POLYGONS.length} polígonos).`, 'success');
+        } else {
+            updateZonaFLoadStatusMessage('Datos de Zona F están vacíos (ZONA_F_POLYGONS_DATA existe pero sin polígonos).', 'info');
         }
-        
-        // Mostrar mensaje inicial de carga
-        updateZonaFLoadStatusMessage('Cargando datos de Zona F (default_zona_f.js)...', 'info');
-
-        zonaFPolygonsLoadingPromise = new Promise((resolve, reject) => {
-            if (ZONA_F_POLYGONS) {
-                nativeLog('Zona F polygons already available.');
-                // No actualizamos mensaje aquí si ya están cargados, podría ser de una llamada anterior.
-                // O sí, para confirmar que se están usando los ya cargados.
-                if (ZONA_F_POLYGONS.length > 0) {
-                     updateZonaFLoadStatusMessage(`Datos de Zona F ya estaban cargados (${ZONA_F_POLYGONS.length} polígonos).`, 'success');
-                } else {
-                     updateZonaFLoadStatusMessage('Datos de Zona F previamente cargados, pero la lista está vacía.', 'info');
-                }
-                resolve(ZONA_F_POLYGONS);
-                return;
-            }
-
-            nativeLog('Attempting to load Zona F polygons from file:///android_asset/default_zona_f.js...');
-            const script = document.createElement('script');
-            script.src = 'file:///android_asset/default_zona_f.js';
-            script.onload = function() {
-                if (typeof ZONA_F_POLYGONS_DATA !== 'undefined') {
-                    if (Array.isArray(ZONA_F_POLYGONS_DATA)) {
-                        ZONA_F_POLYGONS = ZONA_F_POLYGONS_DATA;
-                        nativeLog('Zona F polygons loaded successfully. Count: ' + ZONA_F_POLYGONS.length);
-                        if (ZONA_F_POLYGONS.length > 0) {
-                            updateZonaFLoadStatusMessage(`Éxito: ${ZONA_F_POLYGONS.length} polígonos de Zona F cargados desde default_zona_f.js.`, 'success');
-                        } else {
-                            updateZonaFLoadStatusMessage('Info: default_zona_f.js cargado, pero ZONA_F_POLYGONS_DATA es un array vacío (no hay zonas F definidas).', 'info');
-                        }
-                    } else {
-                        nativeLog('ERROR: ZONA_F_POLYGONS_DATA is defined but not an array. Found: ' + typeof ZONA_F_POLYGONS_DATA);
-                        updateZonaFLoadStatusMessage('Error: default_zona_f.js cargado, pero ZONA_F_POLYGONS_DATA no es un array de polígonos válido.', 'error');
-                        ZONA_F_POLYGONS = []; // Tratar como si no hubiera zonas
-                    }
-                    resolve(ZONA_F_POLYGONS);
-                } else {
-                    nativeLog('ERROR: ZONA_F_POLYGONS_DATA not found after loading default_zona_f.js. Asegúrate que el archivo define esta variable.');
-                    updateZonaFLoadStatusMessage('Error: default_zona_f.js cargado pero la variable global ZONA_F_POLYGONS_DATA no fue definida en el archivo.', 'error');
-                    ZONA_F_POLYGONS = []; 
-                    reject('ZONA_F_POLYGONS_DATA not defined.');
-                }
-            };
-            script.onerror = function(e) {
-                nativeLog('ERROR: Failed to load default_zona_f.js. Error details: ' + e);
-                updateZonaFLoadStatusMessage('Error crítico: No se pudo cargar el archivo default_zona_f.js. Verifique la ruta y disponibilidad del archivo en los assets de la app.', 'error');
-                ZONA_F_POLYGONS = []; 
-                reject('Failed to load default_zona_f.js');
-            };
-            document.head.appendChild(script);
-        });
-        return zonaFPolygonsLoadingPromise;
+    } else {
+        nativeLog('ERROR CRÍTICO: ZONA_F_POLYGONS_DATA no está definida o no es un array. La funcionalidad de Zona F no operará. Esto puede ocurrir si el script zona_f_data_script.js no se cargó o está vacío.');
+        updateZonaFLoadStatusMessage('Error: No se pudieron cargar los datos de Zona F. La variable ZONA_F_POLYGONS_DATA no se encontró o es inválida.', 'error');
+        ZONA_F_POLYGONS = []; // Fallback a array vacío para evitar errores más adelante
     }
 
-    // Algoritmo Ray Casting para determinar si un punto está en un polígono
+
+    // Algoritmo Ray Casting (permanece igual)
     function isPointInPolygon(point, polygon) {
+        if (!point || !Array.isArray(point) || point.length !== 2 || !polygon || !Array.isArray(polygon) || polygon.length < 3) {
+            nativeLog('isPointInPolygon: Entrada inválida. Punto: ' + JSON.stringify(point) + ', Polígono: ' + JSON.stringify(polygon));
+            return false;
+        }
         const x = point[0], y = point[1];
         let isInside = false;
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            if (!Array.isArray(polygon[i]) || polygon[i].length !== 2 || !Array.isArray(polygon[j]) || polygon[j].length !== 2) {
+                nativeLog('isPointInPolygon: Vértice de polígono inválido. Vértice i: ' + JSON.stringify(polygon[i]) + ', Vértice j: ' + JSON.stringify(polygon[j]));
+                continue; 
+            }
             const xi = polygon[i][0], yi = polygon[i][1];
             const xj = polygon[j][0], yj = polygon[j][1];
 
@@ -161,46 +120,38 @@
         return isInside;
     }
 
-    async function checkZonaFStatus(longitude, latitude) {
-        // No se llama a updateZonaFLoadStatusMessage directamente desde aquí,
-        // loadZonaFPolygons ya lo hace.
-        if (!ZONA_F_POLYGONS) {
-            nativeLog('Zona F polygons not yet loaded for check, attempting to load first.');
-            try {
-                await loadZonaFPolygons();
-            } catch (error) {
-                nativeLog('Error loading Zona F polygons during check: ' + error);
-                // El mensaje de error ya se mostró a través de loadZonaFPolygons
-                return { text: "Error Zona F", color: "grey", shortText: "Err" };
-            }
+    // checkZonaFStatus ahora es SÍNCRONO porque ZONA_F_POLYGONS se establece al inicio del script
+    function checkZonaFStatus(longitude, latitude) {
+        if (typeof longitude !== 'number' || typeof latitude !== 'number' || isNaN(longitude) || isNaN(latitude)) {
+             nativeLog(`checkZonaFStatus: Coordenadas inválidas: longitude=${longitude}, latitude=${latitude}`);
+             return { text: "Error Coords", color: "grey", shortText: "Crd!" };
         }
 
-        if (!ZONA_F_POLYGONS || ZONA_F_POLYGONS.length === 0) {
-            nativeLog('No Zona F polygons defined or available after load attempt.');
-            // El mensaje de estado de carga (error o info de array vacío) ya debería estar visible
+        if (!ZONA_F_POLYGONS) { 
+            nativeLog('Error MUY INESPERADO: ZONA_F_POLYGONS es null en checkZonaFStatus. Debería haberse inicializado.');
+             updateZonaFLoadStatusMessage('Error interno: Datos de Zona F no inicializados para la verificación.', 'error');
+            return { text: "Error Interno ZF", color: "grey", shortText: "ErrI" };
+        }
+
+        if (ZONA_F_POLYGONS.length === 0) {
+            nativeLog('No hay polígonos de Zona F definidos para verificar.');
             return { text: "Fuera de Zona F (No hay datos de zona)", color: "green", shortText: "Ok" };
         }
 
         const currentPoint = [longitude, latitude];
         for (let i = 0; i < ZONA_F_POLYGONS.length; i++) {
-            // Validar que el polígono sea un array y tenga al menos 3 puntos
             if (Array.isArray(ZONA_F_POLYGONS[i]) && ZONA_F_POLYGONS[i].length >= 3) {
                 if (isPointInPolygon(currentPoint, ZONA_F_POLYGONS[i])) {
                     nativeLog(`Punto (${longitude}, ${latitude}) ESTÁ DENTRO del polígono F #${i}`);
                     return { text: "Dentro de Zona F", color: "red", shortText: "F!" };
                 }
             } else {
-                nativeLog(`Advertencia: Polígono F #${i} es inválido o tiene menos de 3 puntos.`);
+                nativeLog(`Advertencia: Polígono F #${i} es inválido o tiene menos de 3 puntos. Contenido: ${JSON.stringify(ZONA_F_POLYGONS[i])}`);
             }
         }
         nativeLog(`Punto (${longitude}, ${latitude}) está FUERA de todas las zonas F.`);
         return { text: "Fuera de Zona F", color: "green", shortText: "Ok" };
     }
-    // Carga inicial de polígonos (no bloqueante)
-    loadZonaFPolygons().catch(err => {
-        // El error ya se maneja y muestra en updateZonaFLoadStatusMessage dentro de loadZonaFPolygons
-        nativeLog("Initial Zona F polygon load failed (handled): " + err);
-    });
     // --- FIN: Lógica de Zona F ---
 
 
@@ -223,7 +174,6 @@
         try {
             const lonElem = document.querySelector('#gf_lon');
             if (lonElem) {
-                 // Solo crear si no existe ya
                 let combinedInput = document.querySelector('#gf_latlon');
                 if (!combinedInput) {
                     combinedInput = document.createElement('input');
@@ -294,6 +244,7 @@
                         }
                     } else {
                         nativeLog('WARN: Valores no numéricos en inputs de coordenadas.');
+                        return null; 
                     }
                 }
             } catch (e) {
@@ -306,7 +257,7 @@
             const coords = obtenerCoordenadas();
             let container = document.querySelector('#contenedorBotonesNativos');
 
-            if (!coords) {
+            if (!coords) { 
                 if (container) {
                     nativeLog('Sin coordenadas válidas, eliminando contenedor de botones.');
                     container.remove();
@@ -329,24 +280,22 @@
                     border-radius: 4px;
                 `;
 
-                // --- INICIO: Crear indicador Zona F ---
-                const zonaFIndicator = document.createElement('div');
-                zonaFIndicator.id = 'zonaFStatusIndicator';
-                zonaFIndicator.style.cssText = `
+                const zonaFIndicatorElement = document.createElement('div'); // Renombrado para evitar conflicto de scope
+                zonaFIndicatorElement.id = 'zonaFStatusIndicator';
+                zonaFIndicatorElement.style.cssText = `
                     width: 24px; height: 24px; border-radius: 50%;
                     background-color: grey;
-                    margin-right: 5px; /* Ajustado para mejor espaciado */
+                    margin-right: 5px; 
                     display: flex; align-items: center; justify-content: center;
                     font-size: 10px; color: white; font-weight: bold;
                     border: 1px solid #555;
-                    flex-shrink: 0; /* Para que no se encoja */
-                    box-sizing: border-box; /* Importante para que padding/border no aumenten el tamaño */
+                    flex-shrink: 0; 
+                    box-sizing: border-box; 
                 `;
-                zonaFIndicator.textContent = '?';
-                zonaFIndicator.title = 'Estado Zona F no verificado';
-                container.appendChild(zonaFIndicator); // Añadir primero el indicador
+                zonaFIndicatorElement.textContent = '?';
+                zonaFIndicatorElement.title = 'Estado Zona F no verificado';
+                container.appendChild(zonaFIndicatorElement);
                 nativeLog('Indicador Zona F creado y añadido al contenedor.');
-                // --- FIN: Crear indicador Zona F ---
 
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
@@ -378,7 +327,7 @@
                         alert('No hay coordenadas válidas para copiar.');
                     }
                 });
-                container.appendChild(botonCopiar); // Añadir el botón después del indicador
+                container.appendChild(botonCopiar); 
 
                 const refElement = document.querySelector('#lgdir');
                 const parentContainer = refElement ? refElement.closest('.mb-10') || refElement.parentNode.parentNode : null;
@@ -392,43 +341,35 @@
                 }
             }
 
-            // --- INICIO: Actualizar Indicador Zona F ---
-            const zonaFIndicator = document.getElementById('zonaFStatusIndicator');
+            // --- INICIO: Actualizar Indicador Zona F (AHORA SÍNCRONO) ---
+            const zonaFIndicator = document.getElementById('zonaFStatusIndicator'); // Obtener el indicador que ya existe
             if (zonaFIndicator) {
-                zonaFIndicator.textContent = '...'; // Estado "comprobando"
-                zonaFIndicator.style.backgroundColor = 'orange';
-                zonaFIndicator.title = 'Comprobando Zona F...';
-                nativeLog(`Comprobando Zona F para lng: ${coords.lng}, lat: ${coords.lat}`);
+                if (coords.lat != null && coords.lng != null) { 
+                    zonaFIndicator.textContent = '...'; 
+                    zonaFIndicator.style.backgroundColor = 'orange';
+                    zonaFIndicator.title = 'Comprobando Zona F...';
+                    nativeLog(`Comprobando Zona F para lng: ${coords.lng}, lat: ${coords.lat}`);
 
-                checkZonaFStatus(coords.lng, coords.lat).then(status => {
-                    const currentIndicator = document.getElementById('zonaFStatusIndicator');
-                    // Comprobar si el indicador aún existe, ya que la lógica es asíncrona
-                    if (currentIndicator) {
-                        currentIndicator.textContent = status.shortText;
-                        currentIndicator.style.backgroundColor = status.color;
-                        currentIndicator.title = status.text;
-                        nativeLog(`Indicador Zona F actualizado: ${status.text}`);
-                    } else {
-                        nativeLog('Indicador Zona F no encontrado para actualizar (probablemente eliminado).');
-                    }
-                }).catch(error => {
-                    nativeLog('Error actualizando indicador Zona F: ' + error);
-                    const currentIndicator = document.getElementById('zonaFStatusIndicator');
-                    if (currentIndicator) {
-                        currentIndicator.textContent = 'Err';
-                        currentIndicator.style.backgroundColor = 'grey';
-                        currentIndicator.title = 'Error al comprobar Zona F';
-                    }
-                });
+                    const status = checkZonaFStatus(coords.lng, coords.lat); // LLAMADA SINCRONA
+                    
+                    zonaFIndicator.textContent = status.shortText;
+                    zonaFIndicator.style.backgroundColor = status.color;
+                    zonaFIndicator.title = status.text;
+                    nativeLog(`Indicador Zona F actualizado: ${status.text}`);
+                } else {
+                    zonaFIndicator.textContent = '?';
+                    zonaFIndicator.style.backgroundColor = 'grey';
+                    zonaFIndicator.title = 'Coordenadas no válidas para verificar Zona F';
+                    nativeLog('Coordenadas no válidas para verificar Zona F en gestionarBotones.');
+                }
             }
             // --- FIN: Actualizar Indicador Zona F ---
         }
 
 
         nativeLog('Iniciando monitorización de coordenadas/estado...');
-        setInterval(gestionarBotones, 700); // Aumentado ligeramente por la llamada async
+        setInterval(gestionarBotones, 700);
 
-        // === INICIO: NUEVA FUNCIONALIDAD - MONITOREO PARA BOTÓN "REALIZAR SIMULACIÓN" ===
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
@@ -496,10 +437,8 @@
                         nativeLog("Relación predio seleccionada");
                     }
 
-                    // Tipo de contacto: usar Select2 para "Venta"
                     const tipoInteres = document.querySelector('#tipoInteres');
                     if (tipoInteres) {
-                        // Buscar opción "Venta"
                         const options = Array.from(tipoInteres.options);
                         const ventaOption = options.find(o => o.textContent.trim() === 'Venta');
                         if (ventaOption) {
@@ -509,7 +448,6 @@
                         }
                     }
 
-                    // Seleccionar agencia
                     const agencia = document.querySelector('#agencia');
                     if (agencia) {
                         const options = Array.from(agencia.options);
@@ -521,14 +459,12 @@
                         }
                     }
 
-                    // Click en Register Search
                     setTimeout(() => {
                         const registerSearch = document.querySelector('#register_search');
                         if (registerSearch) {
                             registerSearch.click();
                             nativeLog("Click en register_search");
 
-                            // Confirmación automática
                             setTimeout(() => {
                                 const swalConfirm = document.querySelector('button.swal2-confirm.swal2-styled');
                                 if (swalConfirm) {
@@ -536,7 +472,6 @@
                                     nativeLog("Click automático en Ok confirmación");
                                 }
 
-                                // Habilitar botón de nuevo
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
@@ -578,7 +513,7 @@
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
                 const t = d.textContent || '';
-                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) { // Score >= 201
+                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) { 
                     createSimulationButton();
                     nativeLog("Score válido detectado: " + t.match(/Score:\s*(\d+)/)?.[1]);
                     return;
@@ -613,8 +548,7 @@
                 }
             }, 1000);
         }
-        // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
     }, 1000);
 
-    nativeLog('Script inyectado y ejecución iniciada.');
+    nativeLog('Script principal de Cobertura inyectado y ejecución iniciada.');
 })();
