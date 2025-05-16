@@ -10,6 +10,79 @@
 
     nativeLog('Iniciando ejecución...');
 
+    // --- INICIO: Utilidad para mensajes en página sobre carga de Zona F ---
+    let zonaFLoadStatusDiv = null;
+    function ensureZonaFLoadStatusDiv() {
+        if (document.getElementById('zonaFLoadStatusMessage')) {
+            zonaFLoadStatusDiv = document.getElementById('zonaFLoadStatusMessage');
+            return;
+        }
+        zonaFLoadStatusDiv = document.createElement('div');
+        zonaFLoadStatusDiv.id = 'zonaFLoadStatusMessage';
+        zonaFLoadStatusDiv.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            font-size: 13px;
+            color: #212529;
+            z-index: 20000;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: calc(100% - 20px);
+            box-sizing: border-box;
+            opacity: 0.95;
+            transition: opacity 0.5s;
+        `;
+        
+        const appendToBody = () => {
+            if(document.body) {
+                document.body.appendChild(zonaFLoadStatusDiv);
+                // Opcional: hacer que el mensaje desaparezca después de un tiempo si es de éxito o info
+                // setTimeout(() => {
+                //     if (zonaFLoadStatusDiv && (zonaFLoadStatusDiv.style.borderColor === 'rgb(195, 230, 203)' || zonaFLoadStatusDiv.style.borderColor === 'rgb(184, 218, 255)')) { // Success or Info
+                //         zonaFLoadStatusDiv.style.opacity = '0';
+                //         setTimeout(() => { if(zonaFLoadStatusDiv) zonaFLoadStatusDiv.remove(); }, 500);
+                //     }
+                // }, 10000); // Desaparece después de 10 segundos si no es error
+            } else {
+                setTimeout(appendToBody, 100);
+            }
+        };
+        appendToBody();
+    }
+
+    function updateZonaFLoadStatusMessage(message, type = 'info') { // type: 'info', 'success', 'error'
+        ensureZonaFLoadStatusDiv(); 
+        if (zonaFLoadStatusDiv) {
+            zonaFLoadStatusDiv.textContent = message;
+            zonaFLoadStatusDiv.style.opacity = '0.95'; // Reset opacity if it was faded
+            switch(type) {
+                case 'success':
+                    zonaFLoadStatusDiv.style.color = '#155724';
+                    zonaFLoadStatusDiv.style.backgroundColor = '#d4edda';
+                    zonaFLoadStatusDiv.style.borderColor = '#c3e6cb'; // rgb(195, 230, 203)
+                    break;
+                case 'error':
+                    zonaFLoadStatusDiv.style.color = '#721c24';
+                    zonaFLoadStatusDiv.style.backgroundColor = '#f8d7da';
+                    zonaFLoadStatusDiv.style.borderColor = '#f5c6cb';
+                    break;
+                case 'info':
+                default:
+                    zonaFLoadStatusDiv.style.color = '#004085';
+                    zonaFLoadStatusDiv.style.backgroundColor = '#cce5ff';
+                    zonaFLoadStatusDiv.style.borderColor = '#b8daff'; // rgb(184, 218, 255)
+                    break;
+            }
+        }
+        nativeLog('Zona F Load Info: ' + message); // Log para Android Studio
+    }
+    // --- FIN: Utilidad para mensajes en página sobre carga de Zona F ---
+
+
     // --- INICIO: Lógica de Zona F ---
     let ZONA_F_POLYGONS = null;
     let zonaFPolygonsLoadingPromise = null;
@@ -18,29 +91,54 @@
         if (zonaFPolygonsLoadingPromise) {
             return zonaFPolygonsLoadingPromise;
         }
+        
+        // Mostrar mensaje inicial de carga
+        updateZonaFLoadStatusMessage('Cargando datos de Zona F (default_zona_f.js)...', 'info');
+
         zonaFPolygonsLoadingPromise = new Promise((resolve, reject) => {
             if (ZONA_F_POLYGONS) {
                 nativeLog('Zona F polygons already available.');
+                // No actualizamos mensaje aquí si ya están cargados, podría ser de una llamada anterior.
+                // O sí, para confirmar que se están usando los ya cargados.
+                if (ZONA_F_POLYGONS.length > 0) {
+                     updateZonaFLoadStatusMessage(`Datos de Zona F ya estaban cargados (${ZONA_F_POLYGONS.length} polígonos).`, 'success');
+                } else {
+                     updateZonaFLoadStatusMessage('Datos de Zona F previamente cargados, pero la lista está vacía.', 'info');
+                }
                 resolve(ZONA_F_POLYGONS);
                 return;
             }
+
             nativeLog('Attempting to load Zona F polygons from file:///android_asset/default_zona_f.js...');
             const script = document.createElement('script');
-            script.src = '/android_asset/default_zona_f.js';
+            script.src = '/android_asset/default_zona_f.js'; // Asegúrate que esta ruta es correcta para tu WebView
             script.onload = function() {
                 if (typeof ZONA_F_POLYGONS_DATA !== 'undefined') {
-                    ZONA_F_POLYGONS = ZONA_F_POLYGONS_DATA;
-                    nativeLog('Zona F polygons loaded successfully. Count: ' + (ZONA_F_POLYGONS ? ZONA_F_POLYGONS.length : 0));
+                    if (Array.isArray(ZONA_F_POLYGONS_DATA)) {
+                        ZONA_F_POLYGONS = ZONA_F_POLYGONS_DATA;
+                        nativeLog('Zona F polygons loaded successfully. Count: ' + ZONA_F_POLYGONS.length);
+                        if (ZONA_F_POLYGONS.length > 0) {
+                            updateZonaFLoadStatusMessage(`Éxito: ${ZONA_F_POLYGONS.length} polígonos de Zona F cargados desde default_zona_f.js.`, 'success');
+                        } else {
+                            updateZonaFLoadStatusMessage('Info: default_zona_f.js cargado, pero ZONA_F_POLYGONS_DATA es un array vacío (no hay zonas F definidas).', 'info');
+                        }
+                    } else {
+                        nativeLog('ERROR: ZONA_F_POLYGONS_DATA is defined but not an array. Found: ' + typeof ZONA_F_POLYGONS_DATA);
+                        updateZonaFLoadStatusMessage('Error: default_zona_f.js cargado, pero ZONA_F_POLYGONS_DATA no es un array de polígonos válido.', 'error');
+                        ZONA_F_POLYGONS = []; // Tratar como si no hubiera zonas
+                    }
                     resolve(ZONA_F_POLYGONS);
                 } else {
                     nativeLog('ERROR: ZONA_F_POLYGONS_DATA not found after loading default_zona_f.js. Asegúrate que el archivo define esta variable.');
-                    ZONA_F_POLYGONS = []; // Evitar errores futuros, tratar como si no hubiera zonas F
+                    updateZonaFLoadStatusMessage('Error: default_zona_f.js cargado pero la variable global ZONA_F_POLYGONS_DATA no fue definida en el archivo.', 'error');
+                    ZONA_F_POLYGONS = []; 
                     reject('ZONA_F_POLYGONS_DATA not defined.');
                 }
             };
-            script.onerror = function() {
-                nativeLog('ERROR: Failed to load default_zona_f.js.');
-                ZONA_F_POLYGONS = []; // Evitar errores futuros
+            script.onerror = function(e) {
+                nativeLog('ERROR: Failed to load default_zona_f.js. Error details: ' + e);
+                updateZonaFLoadStatusMessage('Error crítico: No se pudo cargar el archivo default_zona_f.js. Verifique la ruta y disponibilidad del archivo en los assets de la app.', 'error');
+                ZONA_F_POLYGONS = []; 
                 reject('Failed to load default_zona_f.js');
             };
             document.head.appendChild(script);
@@ -64,33 +162,45 @@
     }
 
     async function checkZonaFStatus(longitude, latitude) {
+        // No se llama a updateZonaFLoadStatusMessage directamente desde aquí,
+        // loadZonaFPolygons ya lo hace.
         if (!ZONA_F_POLYGONS) {
             nativeLog('Zona F polygons not yet loaded for check, attempting to load first.');
             try {
                 await loadZonaFPolygons();
             } catch (error) {
                 nativeLog('Error loading Zona F polygons during check: ' + error);
+                // El mensaje de error ya se mostró a través de loadZonaFPolygons
                 return { text: "Error Zona F", color: "grey", shortText: "Err" };
             }
         }
 
         if (!ZONA_F_POLYGONS || ZONA_F_POLYGONS.length === 0) {
             nativeLog('No Zona F polygons defined or available after load attempt.');
+            // El mensaje de estado de carga (error o info de array vacío) ya debería estar visible
             return { text: "Fuera de Zona F (No hay datos de zona)", color: "green", shortText: "Ok" };
         }
 
         const currentPoint = [longitude, latitude];
         for (let i = 0; i < ZONA_F_POLYGONS.length; i++) {
-            if (isPointInPolygon(currentPoint, ZONA_F_POLYGONS[i])) {
-                nativeLog(`Punto (${longitude}, ${latitude}) ESTÁ DENTRO del polígono F #${i}`);
-                return { text: "Dentro de Zona F", color: "red", shortText: "F!" };
+            // Validar que el polígono sea un array y tenga al menos 3 puntos
+            if (Array.isArray(ZONA_F_POLYGONS[i]) && ZONA_F_POLYGONS[i].length >= 3) {
+                if (isPointInPolygon(currentPoint, ZONA_F_POLYGONS[i])) {
+                    nativeLog(`Punto (${longitude}, ${latitude}) ESTÁ DENTRO del polígono F #${i}`);
+                    return { text: "Dentro de Zona F", color: "red", shortText: "F!" };
+                }
+            } else {
+                nativeLog(`Advertencia: Polígono F #${i} es inválido o tiene menos de 3 puntos.`);
             }
         }
         nativeLog(`Punto (${longitude}, ${latitude}) está FUERA de todas las zonas F.`);
         return { text: "Fuera de Zona F", color: "green", shortText: "Ok" };
     }
     // Carga inicial de polígonos (no bloqueante)
-    loadZonaFPolygons().catch(err => nativeLog("Initial Zona F polygon load failed: " + err));
+    loadZonaFPolygons().catch(err => {
+        // El error ya se maneja y muestra en updateZonaFLoadStatusMessage dentro de loadZonaFPolygons
+        nativeLog("Initial Zona F polygon load failed (handled): " + err);
+    });
     // --- FIN: Lógica de Zona F ---
 
 
