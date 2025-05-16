@@ -111,7 +111,7 @@
 
             nativeLog('Attempting to load Zona F polygons from file:///android_asset/default_zona_f.js...');
             const script = document.createElement('script');
-            script.src = '/android_asset/default_zona_f.js'; // Asegúrate que esta ruta es correcta para tu WebView
+            script.src = 'file:///android_asset/default_zona_f.js';
             script.onload = function() {
                 if (typeof ZONA_F_POLYGONS_DATA !== 'undefined') {
                     if (Array.isArray(ZONA_F_POLYGONS_DATA)) {
