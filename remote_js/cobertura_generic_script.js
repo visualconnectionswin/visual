@@ -78,7 +78,6 @@
 
     // --- INICIO: Lógica de Zona F ---
     let ZONA_F_POLYGONS = null; 
-    // Ya no se necesita lastEvaluatedCoordsForZonaF para la lógica principal de gestionarBotones
 
     if (typeof ZONA_F_POLYGONS_DATA !== 'undefined' && Array.isArray(ZONA_F_POLYGONS_DATA)) {
         ZONA_F_POLYGONS = ZONA_F_POLYGONS_DATA;
@@ -95,26 +94,49 @@
     }
 
     function isPointInPolygon(point, polygon) {
-        if (!point || !Array.isArray(point) || point.length !== 2 || !polygon || !Array.isArray(polygon) || polygon.length < 3) {
-            nativeLog('isPointInPolygon: Entrada inválida.');
+        // point es [longitude, latitude]
+        // polygon es un array de [longitude, latitude]
+        if (!point || !Array.isArray(point) || point.length !== 2 || 
+            typeof point[0] !== 'number' || typeof point[1] !== 'number' ||
+            !polygon || !Array.isArray(polygon) || polygon.length < 3) {
+            nativeLog(`isPointInPolygon: Entrada inválida. Punto: ${JSON.stringify(point)}, Polígono tiene ${polygon ? polygon.length : 'null'} vértices.`);
             return false;
         }
-        const x = point[0]; 
-        const y = point[1]; 
+        const pX = point[0]; // Longitud del punto
+        const pY = point[1]; // Latitud del punto
         let isInside = false;
+
+        // nativeLog(`isPointInPolygon: Verificando punto (Lon: ${pX}, Lat: ${pY})`);
+
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            if (!Array.isArray(polygon[i]) || polygon[i].length !== 2 || !Array.isArray(polygon[j]) || polygon[j].length !== 2) {
-                nativeLog('isPointInPolygon: Vértice inválido.');
-                continue; 
+            const vXi = polygon[i][0]; // Longitud del vértice i
+            const vYi = polygon[i][1]; // Latitud del vértice i
+            const vXj = polygon[j][0]; // Longitud del vértice j
+            const vYj = polygon[j][1]; // Latitud del vértice j
+
+            if (typeof vXi !== 'number' || typeof vYi !== 'number' || typeof vXj !== 'number' || typeof vYj !== 'number') {
+                nativeLog(`isPointInPolygon: Vértice no numérico encontrado. i:[${vXi},${vYi}], j:[${vXj},${vYj}]`);
+                continue;
             }
-            const xi = polygon[i][0]; 
-            const yi = polygon[i][1]; 
-            const xj = polygon[j][0]; 
-            const yj = polygon[j][1]; 
-            const intersect = ((yi > y) !== (yj > y)) &&
-                (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi);
-            if (intersect) isInside = !isInside;
+
+            // nativeLog(`  Vértice ${i}: [${vXi}, ${vYi}], Vértice ${j}: [${vXj}, ${vYj}]`);
+
+            // Condición de cruce del rayo horizontal
+            const crossesHorizontalRay = ((vYi > pY) !== (vYj > pY));
+            
+            // Condición de que el punto esté a la izquierda de la arista
+            // (vXj - vXi) * (pY - vYi) / ((vYj - vYi) || 1e-9) + vXi  es la coordenada X de la intersección del rayo con la arista
+            const intersectionX = (vXj - vXi) * (pY - vYi) / ((vYj - vYi) || 1e-9) + vXi;
+            const pointIsLeftOfEdge = (pX < intersectionX);
+
+            // nativeLog(`    crossesHorizontalRay: ${crossesHorizontalRay}, intersectionX: ${intersectionX.toFixed(6)}, pointIsLeftOfEdge: ${pointIsLeftOfEdge}`);
+
+            if (crossesHorizontalRay && pointIsLeftOfEdge) {
+                isInside = !isInside;
+                // nativeLog(`    INTERSECCIÓN! isInside ahora es: ${isInside}`);
+            }
         }
+        // nativeLog(`isPointInPolygon: Resultado final para este polígono: ${isInside}`);
         return isInside;
     }
 
@@ -131,30 +153,47 @@
             nativeLog('No hay polígonos de Zona F definidos.');
             return { text: "Sin Zonas F", color: "GoldenRod", shortText: "N/A" };
         }
+
+        // --- PRUEBA HARDCODEADA (DESCOMENTAR PARA PROBAR UN PUNTO CONOCIDO) ---
+        // Asegúrate que este punto esté DENTRO de uno de tus 27 polígonos
+        // Por ejemplo, si tu primer polígono es:
+        // [[-76.9483412, -12.160958], [-76.9478155, -12.161797], [-76.9473595, -12.1615296], [-76.9479013, -12.1607168], [-76.9483412, -12.160958]]
+        // Un punto dentro podría ser: longitude = -76.9479, latitude = -12.1610
+        //
+        // longitude = -76.9479; // Ejemplo
+        // latitude = -12.1610;  // Ejemplo
+        // nativeLog(`--- USANDO PUNTO HARDCODEADO PARA PRUEBA: Lon=${longitude}, Lat=${latitude} ---`);
+        // --- FIN PRUEBA HARDCODEADA ---
+
         const currentPoint = [longitude, latitude]; 
         nativeLog(`Verificando: Lon=${currentPoint[0]}, Lat=${currentPoint[1]} vs ${ZONA_F_POLYGONS.length} polígonos.`);
+        
         for (let i = 0; i < ZONA_F_POLYGONS.length; i++) {
             const polygon = ZONA_F_POLYGONS[i];
+            // nativeLog(`  Evaluando Polígono #${i}: ${JSON.stringify(polygon)}`);
             if (Array.isArray(polygon) && polygon.length >= 3) {
                 let polygonIsValid = true;
                 for(let k=0; k < polygon.length; k++) {
                     if (!Array.isArray(polygon[k]) || polygon[k].length !== 2 || typeof polygon[k][0] !== 'number' || typeof polygon[k][1] !== 'number') {
-                        nativeLog(`Advertencia: Vértice inválido en polígono F #${i}, vtx #${k}: ${JSON.stringify(polygon[k])}`);
+                        nativeLog(`  Advertencia: Vértice inválido en polígono F #${i}, vtx #${k}: ${JSON.stringify(polygon[k])}`);
                         polygonIsValid = false;
                         break;
                     }
                 }
-                if (!polygonIsValid) continue; 
+                if (!polygonIsValid) {
+                    nativeLog(`  Polígono #${i} tiene vértices inválidos, saltando.`);
+                    continue; 
+                }
                 if (isPointInPolygon(currentPoint, polygon)) {
                     nativeLog(`Punto DENTRO del polígono F #${i}.`);
                     return { text: "DENTRO Zona F", color: "red", shortText: "ZF!" };
                 }
             } else {
-                nativeLog(`Advertencia: Polígono F #${i} inválido.`);
+                nativeLog(`  Advertencia: Polígono F #${i} inválido (no es array o tiene <3 puntos).`);
             }
         }
         nativeLog(`Punto FUERA de todas las zonas F.`);
-        return { text: "FUERA Zona F", color: "green", shortText: "OK" }; // "OK" aquí significa que está fuera, no que es el estado por defecto.
+        return { text: "FUERA Zona F", color: "green", shortText: "OK" };
     }
     // --- FIN: Lógica de Zona F ---
 
@@ -174,7 +213,6 @@
         nativeLog('Ejecutando lógica principal después del delay...');
 
         // === INICIO: Insertar campo combinado "Lat, Lon" y llenarlo ===
-        // ... (Esta parte no cambia)
         try {
             const lonElem = document.querySelector('#gf_lon');
             if (lonElem) {
@@ -214,7 +252,6 @@
         // === FIN: Insertar campo combinado ===
 
         // 2. Eliminar elementos estáticos no deseados
-        // ... (Esta parte no cambia)
         const selectoresAEliminar = [
             '#kt_modal_create_account > div > div > div.modal-header',
             '#kt_header',
@@ -278,7 +315,7 @@
                 container.style.cssText = `
                     display: flex;
                     align-items: center;
-                    gap: 10px; /* Espacio entre elementos */
+                    gap: 10px; 
                     margin-top: 15px;
                     margin-bottom: 10px;
                     padding: 5px;
@@ -286,12 +323,11 @@
                     border-radius: 4px;
                 `;
 
-                // --- INDICADOR ZONA F ---
                 const zonaFIndicatorElement = document.createElement('div'); 
                 zonaFIndicatorElement.id = 'zonaFStatusIndicator';
-                zonaFIndicatorElement.textContent = '?'; // Estado inicial
-                zonaFIndicatorElement.style.backgroundColor = 'grey'; // Color inicial
-                zonaFIndicatorElement.title = 'Zona F: Pendiente de validación';
+                zonaFIndicatorElement.textContent = '?'; 
+                zonaFIndicatorElement.style.backgroundColor = 'grey'; 
+                zonaFIndicatorElement.title = 'Zona F: Pendiente';
                 zonaFIndicatorElement.style.cssText += `
                     width: 24px; height: 24px; border-radius: 50%;
                     margin-right: 5px; 
@@ -303,14 +339,13 @@
                 `;
                 container.appendChild(zonaFIndicatorElement);
 
-                // --- BOTÓN VALIDAR ZONA F ---
                 const botonValidarZonaF = document.createElement('button');
                 botonValidarZonaF.id = 'botonValidarZonaFNativo';
-                botonValidarZonaF.textContent = 'Validar ZF'; // Texto corto para el botón
+                botonValidarZonaF.textContent = 'Validar ZF'; 
                 botonValidarZonaF.type = 'button';
                 botonValidarZonaF.style.cssText = `
-                    padding: 8px 10px; /* Ajustar padding si es necesario */
-                    background-color: #ffc107; /* Amarillo/Naranja */
+                    padding: 8px 10px; 
+                    background-color: #ffc107; 
                     color: #212529;
                     border: none;
                     border-radius: 5px;
@@ -319,7 +354,7 @@
                     flex-shrink: 0;
                 `;
                 botonValidarZonaF.addEventListener('click', function() {
-                    const coordsParaValidar = obtenerCoordenadas(); // Obtener coords frescas al hacer clic
+                    const coordsParaValidar = obtenerCoordenadas(); 
                     const indicator = document.getElementById('zonaFStatusIndicator');
 
                     if (coordsParaValidar && indicator) {
@@ -328,10 +363,9 @@
                         indicator.style.backgroundColor = 'orange';
                         indicator.title = 'Evaluando Zona F...';
 
-                        // Usar un pequeño timeout para que el estado "Evaluando" sea visible
                         setTimeout(() => {
                             const status = checkZonaFStatus(coordsParaValidar.lng, coordsParaValidar.lat);
-                            const currentIndicator = document.getElementById('zonaFStatusIndicator'); // Re-obtener por si acaso
+                            const currentIndicator = document.getElementById('zonaFStatusIndicator'); 
                             if (currentIndicator) {
                                 currentIndicator.textContent = status.shortText;
                                 currentIndicator.style.backgroundColor = status.color;
@@ -350,10 +384,9 @@
                 });
                 container.appendChild(botonValidarZonaF);
 
-                // --- BOTÓN COPIAR COORDENADAS ---
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
-                botonCopiar.textContent = 'Copiar Coords'; // Texto más corto
+                botonCopiar.textContent = 'Copiar Coords'; 
                 botonCopiar.type = 'button';
                 botonCopiar.style.cssText = `
                     padding: 8px 10px;
@@ -394,15 +427,14 @@
                     nativeLog('WARN: Contenedor de botones insertado en fallback.');
                 }
             }
-            // No se necesita llamar a actualizarIndicadorZonaF aquí, se maneja por el botón
         }
 
 
         nativeLog('Iniciando monitorización de coordenadas/estado (gestionarBotones)...');
-        setInterval(gestionarBotones, 700); // Para crear/eliminar el contenedor
+        setInterval(gestionarBotones, 700); 
 
         // ... (resto del código de simulación)
-         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
+        const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
         const VENDOR_NAME = "ZORIANYS MILAGROS LEAL";
