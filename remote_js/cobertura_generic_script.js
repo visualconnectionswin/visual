@@ -78,6 +78,9 @@
 
     // --- INICIO: Lógica de Zona F ---
     let ZONA_F_POLYGONS = null; 
+    // Variable para rastrear las últimas coordenadas evaluadas
+    let lastEvaluatedCoords = { lat: null, lng: null };
+
 
     if (typeof ZONA_F_POLYGONS_DATA !== 'undefined' && Array.isArray(ZONA_F_POLYGONS_DATA)) {
         ZONA_F_POLYGONS = ZONA_F_POLYGONS_DATA;
@@ -93,14 +96,13 @@
         ZONA_F_POLYGONS = []; 
     }
 
-    // Algoritmo Ray Casting MODIFICADO para ser más robusto (evitar división por cero)
     function isPointInPolygon(point, polygon) {
         if (!point || !Array.isArray(point) || point.length !== 2 || !polygon || !Array.isArray(polygon) || polygon.length < 3) {
             nativeLog('isPointInPolygon: Entrada inválida. Punto: ' + JSON.stringify(point) + ', Polígono: ' + JSON.stringify(polygon));
             return false;
         }
-        const x = point[0]; // Longitude
-        const y = point[1]; // Latitude
+        const x = point[0]; 
+        const y = point[1]; 
         let isInside = false;
 
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -113,9 +115,6 @@
             const xj = polygon[j][0]; 
             const yj = polygon[j][1]; 
 
-            // ((yi > y) !== (yj > y)) : Chequea si el segmento cruza la horizontal del punto
-            // (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi) : Chequea si el punto está a la izquierda de la línea del segmento
-            // El || 1e-9 es para evitar la división por cero si yj - yi es 0 (segmento horizontal)
             const intersect = ((yi > y) !== (yj > y)) &&
                 (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi);
             
@@ -129,27 +128,29 @@
     function checkZonaFStatus(longitude, latitude) {
         if (typeof longitude !== 'number' || typeof latitude !== 'number' || isNaN(longitude) || isNaN(latitude)) {
              nativeLog(`checkZonaFStatus: Coordenadas inválidas: longitude=${longitude}, latitude=${latitude}`);
-             return { text: "Error Coords", color: "grey", shortText: "Crd!" };
+             // MODIFICADO: Texto para indicador
+             return { text: "Coords Inválidas", color: "grey", shortText: "Crd!" };
         }
 
         if (!ZONA_F_POLYGONS) { 
             nativeLog('Error MUY INESPERADO: ZONA_F_POLYGONS es null en checkZonaFStatus. Debería haberse inicializado.');
              updateZonaFLoadStatusMessage('Error interno: Datos de Zona F no inicializados para la verificación.', 'error');
-            return { text: "Error Interno ZF", color: "grey", shortText: "ErrI" };
+            // MODIFICADO: Texto para indicador
+            return { text: "Error Datos ZF", color: "darkred", shortText: "ErrD" };
         }
 
         if (ZONA_F_POLYGONS.length === 0) {
             nativeLog('No hay polígonos de Zona F definidos para verificar.');
-            return { text: "Fuera de Zona F (No hay datos de zona)", color: "green", shortText: "Ok" };
+            // MODIFICADO: Texto para indicador
+            return { text: "Sin Zonas F", color: "GoldenRod", shortText: "N/A" };
         }
 
-        const currentPoint = [longitude, latitude]; // Formato [lon, lat]
+        const currentPoint = [longitude, latitude]; 
         nativeLog(`Verificando punto: Lon=${currentPoint[0]}, Lat=${currentPoint[1]} contra ${ZONA_F_POLYGONS.length} polígonos.`);
 
         for (let i = 0; i < ZONA_F_POLYGONS.length; i++) {
             const polygon = ZONA_F_POLYGONS[i];
             if (Array.isArray(polygon) && polygon.length >= 3) {
-                // Asegurarse de que cada vértice del polígono sea un array de 2 números
                 let polygonIsValid = true;
                 for(let k=0; k < polygon.length; k++) {
                     if (!Array.isArray(polygon[k]) || polygon[k].length !== 2 || typeof polygon[k][0] !== 'number' || typeof polygon[k][1] !== 'number') {
@@ -158,18 +159,20 @@
                         break;
                     }
                 }
-                if (!polygonIsValid) continue; // Saltar este polígono si tiene vértices inválidos
+                if (!polygonIsValid) continue; 
 
                 if (isPointInPolygon(currentPoint, polygon)) {
-                    nativeLog(`Punto (${longitude}, ${latitude}) ESTÁ DENTRO del polígono F #${i}. Polígono: ${JSON.stringify(polygon)}`);
-                    return { text: "Dentro de Zona F", color: "red", shortText: "F!" };
+                    nativeLog(`Punto (${longitude}, ${latitude}) ESTÁ DENTRO del polígono F #${i}.`);
+                    // MODIFICADO: Texto para indicador
+                    return { text: "DENTRO Zona F", color: "red", shortText: "ZF!" };
                 }
             } else {
                 nativeLog(`Advertencia: Polígono F #${i} es inválido (no es array o tiene <3 puntos). Contenido: ${JSON.stringify(polygon)}`);
             }
         }
         nativeLog(`Punto (${longitude}, ${latitude}) está FUERA de todas las zonas F.`);
-        return { text: "Fuera de Zona F", color: "green", shortText: "Ok" };
+        // MODIFICADO: Texto para indicador
+        return { text: "FUERA Zona F", color: "green", shortText: "OK" }; // Mantenemos OK para fuera, pero el texto largo es más claro
     }
     // --- FIN: Lógica de Zona F ---
 
@@ -255,7 +258,7 @@
                     const lat = parseFloat(latInput.value);
                     const lng = parseFloat(lngInput.value);
                     if (!isNaN(lat) && !isNaN(lng)) {
-                        if (lat !== 0 || lng !== 0) { // Asegurarse que no sean 0,0 (a menos que sea válido para tu caso)
+                        if (lat !== 0 || lng !== 0) { 
                             return { lat, lng };
                         } else {
                             nativeLog('WARN: Coordenadas (0,0) encontradas en inputs de ltdir/lgdir.');
@@ -265,8 +268,6 @@
                         nativeLog('WARN: Valores no numéricos en inputs de ltdir/lgdir.');
                         return null; 
                     }
-                } else {
-                    // nativeLog('WARN: Inputs ltdir/lgdir no encontrados o vacíos.'); // Comentar si es muy ruidoso
                 }
             } catch (e) {
                 nativeLog('ERROR obteniendo coordenadas de ltdir/lgdir: ' + e.message);
@@ -275,19 +276,23 @@
         }
 
         function gestionarBotones() {
-            const coords = obtenerCoordenadas();
+            const currentCoords = obtenerCoordenadas();
             let container = document.querySelector('#contenedorBotonesNativos');
+            let zonaFIndicator = document.getElementById('zonaFStatusIndicator');
 
-            if (!coords) { 
+            // Si no hay coordenadas válidas, eliminar el contenedor de botones y el indicador si existen
+            if (!currentCoords) { 
                 if (container) {
                     nativeLog('Sin coordenadas válidas de ltdir/lgdir, eliminando contenedor de botones.');
-                    container.remove();
+                    container.remove(); // Esto también elimina el indicador si está dentro
                 }
+                lastEvaluatedCoords = { lat: null, lng: null }; // Resetear las últimas coordenadas evaluadas
                 return;
             }
 
+            // Crear el contenedor y el indicador si no existen
             if (!container) {
-                nativeLog('Creando contenedor de botones.');
+                nativeLog('Creando contenedor de botones e indicador Zona F.');
                 container = document.createElement('div');
                 container.id = 'contenedorBotonesNativos';
                 container.style.cssText = `
@@ -301,11 +306,11 @@
                     border-radius: 4px;
                 `;
 
-                const zonaFIndicatorElement = document.createElement('div'); 
-                zonaFIndicatorElement.id = 'zonaFStatusIndicator';
-                zonaFIndicatorElement.style.cssText = `
+                zonaFIndicator = document.createElement('div'); 
+                zonaFIndicator.id = 'zonaFStatusIndicator';
+                zonaFIndicator.style.cssText = `
                     width: 24px; height: 24px; border-radius: 50%;
-                    background-color: grey;
+                    background-color: orange; /* Color inicial "evaluando" */
                     margin-right: 5px; 
                     display: flex; align-items: center; justify-content: center;
                     font-size: 10px; color: white; font-weight: bold;
@@ -313,15 +318,16 @@
                     flex-shrink: 0; 
                     box-sizing: border-box; 
                 `;
-                zonaFIndicatorElement.textContent = '?';
-                zonaFIndicatorElement.title = 'Estado Zona F no verificado';
-                container.appendChild(zonaFIndicatorElement);
+                zonaFIndicator.textContent = '...'; // Texto inicial "evaluando"
+                zonaFIndicator.title = 'Evaluando Zona F...';
+                container.appendChild(zonaFIndicator);
                 nativeLog('Indicador Zona F creado y añadido al contenedor.');
 
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
                 botonCopiar.textContent = 'Copiar Coordenadas';
                 botonCopiar.type = 'button';
+                // ... (estilos y evento del botón copiar permanecen iguales)
                 botonCopiar.style.cssText = `
                     padding: 8px 12px;
                     background-color: #007bff;
@@ -333,7 +339,7 @@
                     flex-shrink: 0;
                 `;
                 botonCopiar.addEventListener('click', function() {
-                    const c = obtenerCoordenadas(); // Re-obtener por si cambiaron
+                    const c = obtenerCoordenadas(); 
                     if (c) {
                         const textoACopiar = c.lat + ',' + c.lng;
                         try {
@@ -360,35 +366,52 @@
                     fallbackParent.appendChild(container);
                     nativeLog('WARN: Contenedor de botones insertado en ubicación de fallback.');
                 }
+                // Forzar una evaluación inmediata al crear los botones
+                lastEvaluatedCoords = { lat: null, lng: null }; 
             }
+            
+            // Re-obtener el indicador por si acaso, aunque ya debería estar definido si se creó
+            if (!zonaFIndicator) zonaFIndicator = document.getElementById('zonaFStatusIndicator');
 
-            const zonaFIndicator = document.getElementById('zonaFStatusIndicator');
-            if (zonaFIndicator) {
-                if (coords.lat != null && coords.lng != null) { 
-                    zonaFIndicator.textContent = '...'; 
-                    zonaFIndicator.style.backgroundColor = 'orange';
-                    zonaFIndicator.title = 'Comprobando Zona F...';
-                    nativeLog(`Comprobando Zona F para lng: ${coords.lng}, lat: ${coords.lat}`);
+            // Evaluar Zona F si las coordenadas han cambiado o es la primera vez con estas coords
+            if (zonaFIndicator && (currentCoords.lat !== lastEvaluatedCoords.lat || currentCoords.lng !== lastEvaluatedCoords.lng)) {
+                nativeLog(`Nuevas coordenadas o primera evaluación: ${currentCoords.lat}, ${currentCoords.lng}. Evaluando Zona F.`);
+                
+                zonaFIndicator.textContent = '...'; 
+                zonaFIndicator.style.backgroundColor = 'orange'; // Color "evaluando"
+                zonaFIndicator.title = 'Evaluando Zona F...';
 
-                    const status = checkZonaFStatus(coords.lng, coords.lat); 
-                    
-                    zonaFIndicator.textContent = status.shortText;
-                    zonaFIndicator.style.backgroundColor = status.color;
-                    zonaFIndicator.title = status.text;
-                    nativeLog(`Indicador Zona F actualizado: ${status.text} (Color: ${status.color}, Texto Corto: ${status.shortText})`);
-                } else {
-                    zonaFIndicator.textContent = '?';
-                    zonaFIndicator.style.backgroundColor = 'grey';
-                    zonaFIndicator.title = 'Coordenadas no válidas para verificar Zona F';
-                    nativeLog('Coordenadas no válidas (desde ltdir/lgdir) para verificar Zona F en gestionarBotones.');
-                }
+                const status = checkZonaFStatus(currentCoords.lng, currentCoords.lat); 
+                
+                zonaFIndicator.textContent = status.shortText;
+                zonaFIndicator.style.backgroundColor = status.color;
+                zonaFIndicator.title = status.text;
+                nativeLog(`Indicador Zona F actualizado: ${status.text} (Color: ${status.color}, Texto Corto: ${status.shortText})`);
+
+                // Actualizar las últimas coordenadas evaluadas
+                lastEvaluatedCoords.lat = currentCoords.lat;
+                lastEvaluatedCoords.lng = currentCoords.lng;
+            } else if (zonaFIndicator && !lastEvaluatedCoords.lat && !lastEvaluatedCoords.lng) {
+                 // Caso borde: el indicador existe pero no se ha evaluado nada aun
+                nativeLog(`Indicador existe, pero no hay coordenadas evaluadas previamente. Evaluando Zona F para: ${currentCoords.lat}, ${currentCoords.lng}`);
+                zonaFIndicator.textContent = '...'; 
+                zonaFIndicator.style.backgroundColor = 'orange';
+                zonaFIndicator.title = 'Evaluando Zona F...';
+                const status = checkZonaFStatus(currentCoords.lng, currentCoords.lat); 
+                zonaFIndicator.textContent = status.shortText;
+                zonaFIndicator.style.backgroundColor = status.color;
+                zonaFIndicator.title = status.text;
+                nativeLog(`Indicador Zona F actualizado (inicial): ${status.text}`);
+                lastEvaluatedCoords.lat = currentCoords.lat;
+                lastEvaluatedCoords.lng = currentCoords.lng;
             }
         }
 
 
         nativeLog('Iniciando monitorización de coordenadas/estado (gestionarBotones)...');
-        setInterval(gestionarBotones, 700);
+        setInterval(gestionarBotones, 700); // Reevalúa cada 700ms
 
+        // ... (resto del código de simulación, etc., permanece igual)
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
@@ -567,6 +590,7 @@
                 }
             }, 1000);
         }
+
     }, 1000);
 
     nativeLog('Script principal de Cobertura inyectado y ejecución iniciada.');
