@@ -207,7 +207,7 @@
                     container.remove();
                 }
                 // Asegurarse de quitar el tinte si no hay coordenadas
-                document.body.style.removeProperty('background-color');
+                document.body.style.backgroundColor = '';
                 nativeLog('Fondo del body reseteado por falta de coordenadas.');
                 return;
             }
@@ -281,20 +281,42 @@
                     zonaFIndicator.textContent = 'Dentro de Zona F';
                     zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo para el indicador
                     zonaFIndicator.style.color = '#ffffff';
-                    document.body.style.setProperty('background-color', 'rgba(255, 200, 200, 0.2)', 'important');
-                    nativeLog('Aplicando tinte rojizo al body con !important.');
+                    
+                    // Modificación para asegurar que el fondo rojo se aplique correctamente
+                    var redBackground = document.createElement('div');
+                    redBackground.id = 'zona-f-background-overlay';
+                    redBackground.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 200, 200, 0.2); z-index: -1; pointer-events: none;';
+                    
+                    // Eliminar el overlay anterior si existe
+                    var existingOverlay = document.getElementById('zona-f-background-overlay');
+                    if (existingOverlay) {
+                        existingOverlay.remove();
+                    }
+                    
+                    document.body.appendChild(redBackground);
+                    nativeLog('Aplicando overlay rojo al body con posición fixed.');
                 } else if (statusZonaF === "FUERA") {
                     zonaFIndicator.textContent = 'Fuera de Zona F';
                     zonaFIndicator.style.backgroundColor = '#28a745'; // Verde para el indicador
                     zonaFIndicator.style.color = '#ffffff';
-                    document.body.style.removeProperty('background-color');
-                    nativeLog('Fondo del body reseteado (FUERA de Zona F).');
+                    
+                    // Eliminar el overlay rojo si existe
+                    var existingOverlay = document.getElementById('zona-f-background-overlay');
+                    if (existingOverlay) {
+                        existingOverlay.remove();
+                        nativeLog('Overlay rojo eliminado (FUERA de Zona F).');
+                    }
                 } else { // Caso por defecto o "Comprobando" si checkZonaFStatus devolviera algo más
                     zonaFIndicator.textContent = 'Comprobando Zona F';
                     zonaFIndicator.style.backgroundColor = '#808080'; // Gris
                     zonaFIndicator.style.color = '#ffffff';
-                    document.body.style.removeProperty('background-color');
-                    nativeLog('Fondo del body reseteado (Comprobando Zona F).');
+                    
+                    // Eliminar el overlay rojo si existe
+                    var existingOverlay = document.getElementById('zona-f-background-overlay');
+                    if (existingOverlay) {
+                        existingOverlay.remove();
+                        nativeLog('Overlay rojo eliminado (Comprobando Zona F).');
+                    }
                 }
             }
         }
