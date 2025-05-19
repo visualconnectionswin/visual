@@ -70,23 +70,15 @@
     // === FIN: DATOS DE POLÍGONOS ZONA F ===
 
     // === INICIO: FUNCIONES PARA COMPROBAR ZONA F ===
-    /**
-     * Verifica si un punto está dentro de un polígono usando el algoritmo de ray casting.
-     * @param {Array<number>} point - Un array [lat, lon] para el punto.
-     * @param {Array<Array<number>>} polygon - Un array de vertices [[lat, lon], [lat, lon], ...].
-     * @returns {boolean} - True si el punto está dentro del polígono, false en caso contrario.
-     */
     function isPointInPolygon(point, polygon) {
-        const lat = point[0]; // y
-        const lon = point[1]; // x
+        const lat = point[0]; 
+        const lon = point[1]; 
         let inside = false;
-
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const lat_i = polygon[i][0]; // yi
-            const lon_i = polygon[i][1]; // xi
-            const lat_j = polygon[j][0]; // yj
-            const lon_j = polygon[j][1]; // xj
-
+            const lat_i = polygon[i][0]; 
+            const lon_i = polygon[i][1]; 
+            const lat_j = polygon[j][0]; 
+            const lon_j = polygon[j][1]; 
             const intersect = ((lat_i > lat) !== (lat_j > lat)) &&
                 (lon < (lon_j - lon_i) * (lat - lat_i) / (lat_j - lat_i) + lon_i);
             if (intersect) {
@@ -96,20 +88,14 @@
         return inside;
     }
 
-    /**
-     * Comprueba el estado de un punto (lat, lon) contra ZONA_F_POLYGONS_DATA.
-     * @param {number} lat - Latitud del punto.
-     * @param {number} lon - Longitud del punto.
-     * @returns {string} - "DENTRO" si está en zona F, "FUERA" si no.
-     */
     function checkZonaFStatus(lat, lon) {
         const point = [lat, lon];
         for (const polygon of ZONA_F_POLYGONS_DATA) {
             if (isPointInPolygon(point, polygon)) {
-                return "DENTRO"; // El punto está dentro de al menos un polígono de Zona F
+                return "DENTRO"; 
             }
         }
-        return "FUERA"; // El punto no está en ningún polígono de Zona F
+        return "FUERA"; 
     }
     // === FIN: FUNCIONES PARA COMPROBAR ZONA F ===
 
@@ -132,7 +118,6 @@
         try {
             const lonElem = document.querySelector('#gf_lon');
             if (lonElem) {
-                // Solo crear si no existe ya
                 let combinedInput = document.querySelector('#gf_latlon');
                 if (!combinedInput) {
                     combinedInput = document.createElement('input');
@@ -214,13 +199,14 @@
         function gestionarBotones() {
             const coords = obtenerCoordenadas();
             let container = document.querySelector('#contenedorBotonesNativos');
-            // Intenta obtener el indicador de Zona F existente
             let zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
 
             if (!coords) {
                 if (container) {
                     nativeLog('Sin coordenadas válidas, eliminando botones y status.');
-                    container.remove(); // Esto también eliminará el indicador si está dentro
+                    container.remove();
+                    document.body.style.boxShadow = ''; // Quitar tono rojizo si no hay coords
+                    nativeLog('Quitando tono rojizo de la página (sin coords).');
                 }
                 return;
             }
@@ -231,10 +217,8 @@
                 container.id = 'contenedorBotonesNativos';
                 container.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 10px; padding: 5px; border: 1px dashed #ccc; border-radius: 4px;';
 
-                // === INICIO: Crear Indicador Zona F ===
                 zonaFIndicator = document.createElement('span');
                 zonaFIndicator.id = 'zonaFStatusIndicatorNativo';
-                // Estilo base similar al botón, pero los colores y texto se actualizarán después
                 zonaFIndicator.style.cssText = `
                     padding: 8px 12px; 
                     color: #fff; 
@@ -244,9 +228,8 @@
                     flex-shrink: 0;
                     background-color: #808080; /* Gris por defecto */
                 `;
-                zonaFIndicator.textContent = 'Comprobando Zona F'; // Estado inicial
-                container.appendChild(zonaFIndicator); // Añadirlo primero para que esté a la izquierda
-                // === FIN: Crear Indicador Zona F ===
+                zonaFIndicator.textContent = 'Comprobando Zona F';
+                container.appendChild(zonaFIndicator);
 
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
@@ -283,16 +266,17 @@
                 }
             }
 
-            // === INICIO: Actualizar Indicador Zona F (siempre que haya coords y el indicador exista) ===
-            // Asegurarse de que tenemos el indicador, especialmente si el contenedor ya existía
             if (!zonaFIndicator) {
                  zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
             }
 
-            if (zonaFIndicator) { // Solo si el indicador existe (debería si el container existe)
+            if (zonaFIndicator) { 
                 zonaFIndicator.textContent = 'Comprobando Zona F';
-                zonaFIndicator.style.backgroundColor = '#808080'; // Gris
+                zonaFIndicator.style.backgroundColor = '#808080'; 
                 zonaFIndicator.style.color = '#ffffff';
+                // Asegurarse de quitar el tinte si no se está en zona F o al comprobar
+                document.body.style.boxShadow = ''; 
+
 
                 const statusZonaF = checkZonaFStatus(coords.lat, coords.lng);
                 nativeLog(`Check Zona F: Lat ${coords.lat}, Lng ${coords.lng} -> ${statusZonaF}`);
@@ -300,16 +284,21 @@
                 if (statusZonaF === "DENTRO") {
                     zonaFIndicator.textContent = 'Dentro de Zona F';
                     zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo
+                    // Aplicar un tono rojizo sutil a toda la página
+                    document.body.style.boxShadow = 'inset 0 0 0 100vmax rgba(220, 53, 69, 0.07)'; 
+                    nativeLog('Aplicando tono rojizo a la página.');
+
                 } else { // FUERA
                     zonaFIndicator.textContent = 'Fuera de Zona F';
                     zonaFIndicator.style.backgroundColor = '#28a745'; // Verde
+                    document.body.style.boxShadow = ''; // Quitar tono rojizo
+                    nativeLog('Quitando tono rojizo de la página.');
                 }
             }
-            // === FIN: Actualizar Indicador Zona F ===
         }
 
         nativeLog('Iniciando monitorización de coordenadas/estado...');
-        setInterval(gestionarBotones, 500); // Aumentado a 500ms, ajustar si es necesario
+        setInterval(gestionarBotones, 500);
 
         // === INICIO: NUEVA FUNCIONALIDAD - MONITOREO PARA BOTÓN "REALIZAR SIMULACIÓN" ===
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
@@ -379,10 +368,8 @@
                         nativeLog("Relación predio seleccionada");
                     }
 
-                    // Tipo de contacto: usar Select2 para "Venta"
                     const tipoInteres = document.querySelector('#tipoInteres');
                     if (tipoInteres) {
-                        // Buscar opción "Venta"
                         const options = Array.from(tipoInteres.options);
                         const ventaOption = options.find(o => o.textContent.trim() === 'Venta');
                         if (ventaOption) {
@@ -392,7 +379,6 @@
                         }
                     }
 
-                    // Seleccionar agencia
                     const agencia = document.querySelector('#agencia');
                     if (agencia) {
                         const options = Array.from(agencia.options);
@@ -404,29 +390,25 @@
                         }
                     }
 
-                    // Click en Register Search
                     setTimeout(() => {
                         const registerSearch = document.querySelector('#register_search');
                         if (registerSearch) {
                             registerSearch.click();
                             nativeLog("Click en register_search");
 
-                            // Confirmación automática
                             setTimeout(() => {
                                 const swalConfirm = document.querySelector('button.swal2-confirm.swal2-styled');
                                 if (swalConfirm) {
                                     swalConfirm.click();
                                     nativeLog("Click automático en Ok confirmación");
                                 }
-
-                                // Habilitar botón de nuevo
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
-                            }, 1000); //Ajustar si el swal tarda más
+                            }, 1000);
                         }
-                    }, 500); //Ajustar si los campos tardan en procesarse
-                }, 1000); //Ajustar si el ID tarda en aparecer
+                    }, 500);
+                }, 1000);
 
             } catch (e) {
                 nativeLog("ERROR en simulación: " + e.message);
@@ -461,7 +443,7 @@
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
                 const t = d.textContent || '';
-                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) { //Score > 200
+                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) { 
                     createSimulationButton();
                     nativeLog("Score válido detectado: " + t.match(/Score:\s*(\d+)/)?.[1]);
                     return;
@@ -497,7 +479,7 @@
             }, 1000);
         }
         // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
-    }, 1000); // Tiempo general para que el DOM de la página principal se cargue
+    }, 1000);
 
     nativeLog('Script inyectado y ejecución iniciada.');
 })();
