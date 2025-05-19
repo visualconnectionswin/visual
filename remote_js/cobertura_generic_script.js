@@ -10,6 +10,11 @@
 
     nativeLog('Iniciando ejecución...');
 
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAb9QwsltGjAIBjzdxTr2BiJlwJ6JRWcz9XgWirsGRGhftygGgAXcqWaSy8bwD4VOf/exec'; // <<< REEMPLAZA ESTO CON TU URL DE GOOGLE APPS SCRIPT
+
+    let lastCheckedLatForZonaF = null;
+    let lastCheckedLngForZonaF = null;
+
     // 1. Intentar hacer clic en el botón "Nuevo Lead"
     setTimeout(function() {
         const nuevoLeadButton = document.querySelector('#btnNuevoLead');
@@ -29,7 +34,7 @@
         try {
             const lonElem = document.querySelector('#gf_lon');
             if (lonElem) {
-                 // Solo crear si no existe ya
+                // Solo crear si no existe ya
                 let combinedInput = document.querySelector('#gf_latlon');
                 if (!combinedInput) {
                     combinedInput = document.createElement('input');
@@ -108,18 +113,80 @@
             return null;
         }
 
+        function comprobarZonaF(coords, statusElement) {
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'TU_URL_DE_APPS_SCRIPT_AQUI_VA_AQUI') {
+                nativeLog('ERROR: La URL de Google Apps Script no está configurada.');
+                statusElement.textContent = 'Error Config GS';
+                statusElement.style.backgroundColor = '#ffc107'; // Amarillo
+                statusElement.style.color = '#000';
+                return;
+            }
+
+            nativeLog(`Comprobando Zona F para: ${coords.lat}, ${coords.lng}`);
+            statusElement.textContent = 'Comprobando Zona F';
+            statusElement.style.backgroundColor = '#808080'; // Gris
+            statusElement.style.color = '#fff';
+
+            const params = new URLSearchParams({
+                lat: coords.lat,
+                lng: coords.lng
+            });
+            const url = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP! estado: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    nativeLog('Respuesta de Zona F: ' + JSON.stringify(data));
+                    if (data.status === 'DENTRO') {
+                        statusElement.textContent = 'Dentro de Zona F';
+                        statusElement.style.backgroundColor = '#dc3545'; // Rojo
+                        statusElement.style.color = '#fff';
+                    } else if (data.status === 'FUERA') {
+                        statusElement.textContent = 'Fuera de Zona F';
+                        statusElement.style.backgroundColor = '#28a745'; // Verde
+                        statusElement.style.color = '#fff';
+                    } else {
+                        statusElement.textContent = 'Error Zona F';
+                        statusElement.style.backgroundColor = '#ffc107'; // Amarillo
+                        statusElement.style.color = '#000';
+                        nativeLog('Respuesta desconocida de Zona F: ' + (data.status || JSON.stringify(data)));
+                    }
+                })
+                .catch(error => {
+                    nativeLog('Error al comprobar Zona F: ' + error.message);
+                    statusElement.textContent = 'Error Red Zona F';
+                    statusElement.style.backgroundColor = '#ffc107'; // Amarillo
+                    statusElement.style.color = '#000';
+                });
+        }
+
         function gestionarBotones() {
             const coords = obtenerCoordenadas();
             let container = document.querySelector('#contenedorBotonesNativos');
+            // Intentar obtener el elemento de estado de Zona F del DOM en cada ejecución
+            let zonaFStatusElement = document.getElementById('zonaFStatusDisplayNativo');
+
             if (!coords) {
                 if (container) {
-                    nativeLog('Sin coordenadas válidas, eliminando botones.');
-                    container.remove();
+                    nativeLog('Sin coordenadas válidas, eliminando botones y estado Zona F.');
+                    container.remove(); // Esto eliminará también zonaFStatusElement si es hijo
                 }
+                // Si por alguna razón zonaFStatusElement existe fuera del container y no hay coords.
+                if (zonaFStatusElement && !zonaFStatusElement.closest('#contenedorBotonesNativos')) {
+                    zonaFStatusElement.remove();
+                }
+                lastCheckedLatForZonaF = null;
+                lastCheckedLngForZonaF = null;
                 return;
             }
+
             if (!container) {
-                nativeLog('Creando contenedor de botones.');
+                nativeLog('Creando contenedor de botones y estado Zona F.');
                 container = document.createElement('div');
                 container.id = 'contenedorBotonesNativos';
                 container.style.cssText = `
@@ -132,6 +199,23 @@
                     border: 1px dashed #ccc;
                     border-radius: 4px;
                 `;
+
+                // Crear elemento de estado Zona F
+                zonaFStatusElement = document.createElement('div');
+                zonaFStatusElement.id = 'zonaFStatusDisplayNativo';
+                // Estilo inicial, se actualizará en comprobarZonaF
+                zonaFStatusElement.style.cssText = `
+                    padding: 8px 12px;
+                    background-color: #808080; /* Gris inicial */
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 13px;
+                    flex-shrink: 0;
+                    text-align: center;
+                    line-height: normal; /* Asegurar consistencia de altura */
+                `;
+                container.appendChild(zonaFStatusElement); // Añadir ANTES del botón de copiar
 
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
@@ -176,15 +260,31 @@
                     nativeLog('WARN: Contenedor de botones insertado en ubicación de fallback.');
                 }
             }
+            
+            // Re-obtener referencia a zonaFStatusElement por si se acaba de crear
+            zonaFStatusElement = document.getElementById('zonaFStatusDisplayNativo');
+
+            // Comprobar Zona F si las coordenadas cambiaron o es la primera vez que el elemento existe con coordenadas válidas
+            if (zonaFStatusElement && (coords.lat !== lastCheckedLatForZonaF || coords.lng !== lastCheckedLngForZonaF)) {
+                nativeLog('Coordenadas para Zona F actualizadas (' + coords.lat + ',' + coords.lng + ') o primera vez. Verificando...');
+                comprobarZonaF(coords, zonaFStatusElement); // La función ahora actualiza el texto a "Comprobando..."
+                lastCheckedLatForZonaF = coords.lat;
+                lastCheckedLngForZonaF = coords.lng;
+            } else if (zonaFStatusElement && coords.lat === lastCheckedLatForZonaF && coords.lng === lastCheckedLngForZonaF) {
+                // nativeLog('Coordenadas para Zona F (' + coords.lat + ',' + coords.lng + ') sin cambios. No se vuelve a verificar.');
+            } else if (!zonaFStatusElement && coords) {
+                 // Esto podría pasar si el elemento no se encontró por alguna razón después de que se supone que el contenedor existe
+                nativeLog('WARN: zonaFStatusDisplayNativo no encontrado, pero hay coordenadas. Se intentará en el próximo ciclo.');
+            }
         }
 
         nativeLog('Iniciando monitorización de coordenadas/estado...');
-        setInterval(gestionarBotones, 500);
+        setInterval(gestionarBotones, 500); // Aumentado ligeramente para dar margen a las operaciones del DOM
 
         // === INICIO: NUEVA FUNCIONALIDAD - MONITOREO PARA BOTÓN "REALIZAR SIMULACIÓN" ===
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
-        const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
+        const SCORE_CONTAINER_SELECTOR = '#score_customer_div'; // Asumo que es el mismo para insertar el botón después
         const VENDOR_NAME = "ZORIANYS MILAGROS LEAL";
 
         function handleSimulationClick() {
@@ -249,10 +349,8 @@
                         nativeLog("Relación predio seleccionada");
                     }
 
-                    // Tipo de contacto: usar Select2 para "Venta"
                     const tipoInteres = document.querySelector('#tipoInteres');
                     if (tipoInteres) {
-                        // Buscar opción "Venta"
                         const options = Array.from(tipoInteres.options);
                         const ventaOption = options.find(o => o.textContent.trim() === 'Venta');
                         if (ventaOption) {
@@ -262,7 +360,6 @@
                         }
                     }
 
-                    // Seleccionar agencia
                     const agencia = document.querySelector('#agencia');
                     if (agencia) {
                         const options = Array.from(agencia.options);
@@ -274,14 +371,12 @@
                         }
                     }
 
-                    // Click en Register Search
                     setTimeout(() => {
                         const registerSearch = document.querySelector('#register_search');
                         if (registerSearch) {
                             registerSearch.click();
                             nativeLog("Click en register_search");
 
-                            // Confirmación automática
                             setTimeout(() => {
                                 const swalConfirm = document.querySelector('button.swal2-confirm.swal2-styled');
                                 if (swalConfirm) {
@@ -289,7 +384,6 @@
                                     nativeLog("Click automático en Ok confirmación");
                                 }
 
-                                // Habilitar botón de nuevo
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
@@ -315,8 +409,14 @@
             b.style.margin = '10px 0';
             b.addEventListener('click', handleSimulationClick);
             const c = document.querySelector(SCORE_CONTAINER_SELECTOR);
-            if (c) c.parentNode.insertBefore(b, c.nextSibling);
-            nativeLog("Botón de simulación creado");
+            if (c) {
+                // Insertar después del contenedor de score, no dentro.
+                c.parentNode.insertBefore(b, c.nextSibling);
+                nativeLog("Botón de simulación creado después de " + SCORE_CONTAINER_SELECTOR);
+            } else {
+                nativeLog("WARN: Contenedor " + SCORE_CONTAINER_SELECTOR + " no encontrado para botón de simulación.");
+                // Fallback: añadir al body o a un contenedor principal si es necesario
+            }
         }
 
         function removeSimulationButton() {
@@ -331,11 +431,15 @@
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
                 const t = d.textContent || '';
-                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) {
+                if (/Score:\s*(?:20[1-9]|[2-9]\d{2}|\d{4,})/.test(t)) { // Modificado para aceptar scores >= 201
                     createSimulationButton();
                     nativeLog("Score válido detectado: " + t.match(/Score:\s*(\d+)/)?.[1]);
                     return;
+                } else {
+                    nativeLog("Score no válido o no visible: " + t);
                 }
+            } else {
+                 // nativeLog("Elemento score no visible o no encontrado.");
             }
             removeSimulationButton();
         }
@@ -344,12 +448,19 @@
         const scoreDisplay = document.querySelector(SCORE_DISPLAY_SELECTOR);
         if (scoreDisplay) {
             nativeLog('Elemento score encontrado, configurando observer');
-            new MutationObserver(checkScoreAndToggleButton).observe(scoreDisplay, {
+            const observer = new MutationObserver(checkScoreAndToggleButton);
+            observer.observe(scoreDisplay, {
                 childList: true,
                 subtree: true,
-                characterData: true
+                characterData: true,
+                attributes: true, // Observar cambios de atributos como 'style' (display)
+                attributeFilter: ['style']
             });
-            checkScoreAndToggleButton();
+            // También observar cambios en el display del propio elemento scoreDisplay
+             const displayObserver = new MutationObserver(checkScoreAndToggleButton);
+             displayObserver.observe(scoreDisplay, { attributes: true, attributeFilter: ['style'] });
+
+            checkScoreAndToggleButton(); // Chequeo inicial
         } else {
             nativeLog('Elemento score no encontrado, programando chequeo periódico');
             const scoreCheckInterval = setInterval(() => {
@@ -357,17 +468,22 @@
                 if (scoreElement) {
                     clearInterval(scoreCheckInterval);
                     nativeLog('Elemento score encontrado posteriormente');
-                    new MutationObserver(checkScoreAndToggleButton).observe(scoreElement, {
+                    const observer = new MutationObserver(checkScoreAndToggleButton);
+                    observer.observe(scoreElement, {
                         childList: true,
                         subtree: true,
-                        characterData: true
+                        characterData: true,
+                        attributes: true,
+                        attributeFilter: ['style']
                     });
+                     const displayObserver = new MutationObserver(checkScoreAndToggleButton);
+                     displayObserver.observe(scoreElement, { attributes: true, attributeFilter: ['style'] });
                     checkScoreAndToggleButton();
                 }
             }, 1000);
         }
         // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
-    }, 1000);
+    }, 1000); // Delay aumentado para asegurar que los elementos del DOM estén más probablemente cargados
 
     nativeLog('Script inyectado y ejecución iniciada.');
 })();
