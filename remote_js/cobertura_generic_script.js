@@ -56,8 +56,8 @@
             [-12.0356446, -76.9675253],[-12.036909, -76.9669808],[-12.0367463, -76.9665919],[-12.0353665, -76.9671712],[-12.0356446, -76.9675253]],
         [ // Polígono 21
             [-11.9311765, -77.0819181],[-11.9314009, -77.0817437],[-11.9316016, -77.0815319],[-11.9307514, -77.0804831],[-11.9297752, -77.0812985],[-11.9311765, -77.0819181]],
-        [ // Polígono 22
-            [-11.9892681, -77.0007624],[-11.9898768, -76.9993864],[-11.9896171, -76.9991236],[-11.9895121, -77.0002201],[-11.9893311, -76.9994535],[-11.988872, -77.0006041],[-11.9892681, -77.0007624]], // Corregido un typo aquí en la lon del penúltimo punto
+        [ // Polígono 22 (Corregido posible typo en la última coordenada si era para cerrar el polígono)
+            [-11.9892681, -77.0007624],[-11.9898768, -76.9993864],[-11.9896171, -76.9991236],[-11.9895121, -76.9992201],[-11.9893311, -76.9994535],[-11.988872, -77.0006041],[-11.9892681, -77.0007624]],
         [ // Polígono 23
             [-12.0255958, -77.0135206],[-12.0259001, -77.013483],[-12.0257218, -77.0118308],[-12.0252915, -77.0118737],[-12.0253781, -77.0128581],[-12.0253938, -77.0130512],[-12.0255958, -77.0135206]],
         [ // Polígono 24
@@ -201,17 +201,17 @@
             let container = document.querySelector('#contenedorBotonesNativos');
             let zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
 
-            // Si no hay coordenadas, eliminar botones/indicador y resetear fondo del body
             if (!coords) {
                 if (container) {
                     nativeLog('Sin coordenadas válidas, eliminando botones y status.');
                     container.remove();
                 }
-                document.body.style.backgroundColor = ''; // Quitar tinte rojizo si estaba aplicado
+                // Asegurarse de quitar el tinte si no hay coordenadas
+                document.body.style.removeProperty('background-color');
+                nativeLog('Fondo del body reseteado por falta de coordenadas.');
                 return;
             }
 
-            // Si hay coordenadas pero el contenedor no existe, crearlo
             if (!container) {
                 nativeLog('Creando contenedor de botones y status Zona F.');
                 container = document.createElement('div');
@@ -227,9 +227,9 @@
                     border-radius: 5px; 
                     font-size: 13px; 
                     flex-shrink: 0;
-                    background-color: #808080; /* Gris por defecto */
+                    /* El color de fondo se establecerá dinámicamente */
                 `;
-                zonaFIndicator.textContent = 'Comprobando Zona F';
+                // El texto y color se establecerán más abajo, después de checkZonaFStatus
                 container.appendChild(zonaFIndicator);
 
                 const botonCopiar = document.createElement('button');
@@ -268,30 +268,33 @@
             }
 
             // Actualizar indicador Zona F y fondo del body
-            if (!zonaFIndicator) { // Asegurarse de tener la referencia
+            // Asegurarse de que tenemos el indicador, especialmente si el contenedor ya existía
+            if (!zonaFIndicator) {
                  zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
             }
-
+            
             if (zonaFIndicator) {
-                // Estado por defecto: Comprobando
-                zonaFIndicator.textContent = 'Comprobando Zona F';
-                zonaFIndicator.style.backgroundColor = '#808080'; // Gris
-                zonaFIndicator.style.color = '#ffffff';
-                document.body.style.backgroundColor = ''; // Resetear tinte del body
-
                 const statusZonaF = checkZonaFStatus(coords.lat, coords.lng);
                 nativeLog(`Check Zona F: Lat ${coords.lat}, Lng ${coords.lng} -> ${statusZonaF}`);
 
                 if (statusZonaF === "DENTRO") {
                     zonaFIndicator.textContent = 'Dentro de Zona F';
                     zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo para el indicador
-                    document.body.style.backgroundColor = 'rgba(255, 200, 200, 0.2)'; // Tono rojizo sutil para el body
-                    nativeLog('Aplicando tinte rojizo al body.');
-                } else { // FUERA
+                    zonaFIndicator.style.color = '#ffffff';
+                    document.body.style.setProperty('background-color', 'rgba(255, 200, 200, 0.2)', 'important');
+                    nativeLog('Aplicando tinte rojizo al body con !important.');
+                } else if (statusZonaF === "FUERA") {
                     zonaFIndicator.textContent = 'Fuera de Zona F';
                     zonaFIndicator.style.backgroundColor = '#28a745'; // Verde para el indicador
-                    // El backgroundColor del body ya se reseteó arriba, no es necesario hacerlo de nuevo aquí.
-                    nativeLog('Quitando tinte rojizo del body (si estaba).');
+                    zonaFIndicator.style.color = '#ffffff';
+                    document.body.style.removeProperty('background-color');
+                    nativeLog('Fondo del body reseteado (FUERA de Zona F).');
+                } else { // Caso por defecto o "Comprobando" si checkZonaFStatus devolviera algo más
+                    zonaFIndicator.textContent = 'Comprobando Zona F';
+                    zonaFIndicator.style.backgroundColor = '#808080'; // Gris
+                    zonaFIndicator.style.color = '#ffffff';
+                    document.body.style.removeProperty('background-color');
+                    nativeLog('Fondo del body reseteado (Comprobando Zona F).');
                 }
             }
         }
