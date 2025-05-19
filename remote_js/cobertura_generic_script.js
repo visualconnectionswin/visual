@@ -57,7 +57,7 @@
         [ // Polígono 21
             [-11.9311765, -77.0819181],[-11.9314009, -77.0817437],[-11.9316016, -77.0815319],[-11.9307514, -77.0804831],[-11.9297752, -77.0812985],[-11.9311765, -77.0819181]],
         [ // Polígono 22
-            [-11.9892681, -77.0007624],[-11.9898768, -76.9993864],[-11.9896171, -76.9991236],[-11.9895121, -76.9992201],[-11.9893311, -76.9994535],[-11.988872, -77.0006041],[-11.9892681, -77.0007624]],
+            [-11.9892681, -77.0007624],[-11.9898768, -76.9993864],[-11.9896171, -76.9991236],[-11.9895121, -77.0002201],[-11.9893311, -76.9994535],[-11.988872, -77.0006041],[-11.9892681, -77.0007624]], // Corregido un typo aquí en la lon del penúltimo punto
         [ // Polígono 23
             [-12.0255958, -77.0135206],[-12.0259001, -77.013483],[-12.0257218, -77.0118308],[-12.0252915, -77.0118737],[-12.0253781, -77.0128581],[-12.0253938, -77.0130512],[-12.0255958, -77.0135206]],
         [ // Polígono 24
@@ -71,14 +71,14 @@
 
     // === INICIO: FUNCIONES PARA COMPROBAR ZONA F ===
     function isPointInPolygon(point, polygon) {
-        const lat = point[0]; 
-        const lon = point[1]; 
+        const lat = point[0];
+        const lon = point[1];
         let inside = false;
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const lat_i = polygon[i][0]; 
-            const lon_i = polygon[i][1]; 
-            const lat_j = polygon[j][0]; 
-            const lon_j = polygon[j][1]; 
+            const lat_i = polygon[i][0];
+            const lon_i = polygon[i][1];
+            const lat_j = polygon[j][0];
+            const lon_j = polygon[j][1];
             const intersect = ((lat_i > lat) !== (lat_j > lat)) &&
                 (lon < (lon_j - lon_i) * (lat - lat_i) / (lat_j - lat_i) + lon_i);
             if (intersect) {
@@ -92,10 +92,10 @@
         const point = [lat, lon];
         for (const polygon of ZONA_F_POLYGONS_DATA) {
             if (isPointInPolygon(point, polygon)) {
-                return "DENTRO"; 
+                return "DENTRO";
             }
         }
-        return "FUERA"; 
+        return "FUERA";
     }
     // === FIN: FUNCIONES PARA COMPROBAR ZONA F ===
 
@@ -201,16 +201,17 @@
             let container = document.querySelector('#contenedorBotonesNativos');
             let zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
 
+            // Si no hay coordenadas, eliminar botones/indicador y resetear fondo del body
             if (!coords) {
                 if (container) {
                     nativeLog('Sin coordenadas válidas, eliminando botones y status.');
                     container.remove();
-                    document.body.style.boxShadow = ''; // Quitar tono rojizo si no hay coords
-                    nativeLog('Quitando tono rojizo de la página (sin coords).');
                 }
+                document.body.style.backgroundColor = ''; // Quitar tinte rojizo si estaba aplicado
                 return;
             }
 
+            // Si hay coordenadas pero el contenedor no existe, crearlo
             if (!container) {
                 nativeLog('Creando contenedor de botones y status Zona F.');
                 container = document.createElement('div');
@@ -266,33 +267,31 @@
                 }
             }
 
-            if (!zonaFIndicator) {
+            // Actualizar indicador Zona F y fondo del body
+            if (!zonaFIndicator) { // Asegurarse de tener la referencia
                  zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
             }
 
-            if (zonaFIndicator) { 
+            if (zonaFIndicator) {
+                // Estado por defecto: Comprobando
                 zonaFIndicator.textContent = 'Comprobando Zona F';
-                zonaFIndicator.style.backgroundColor = '#808080'; 
+                zonaFIndicator.style.backgroundColor = '#808080'; // Gris
                 zonaFIndicator.style.color = '#ffffff';
-                // Asegurarse de quitar el tinte si no se está en zona F o al comprobar
-                document.body.style.boxShadow = ''; 
-
+                document.body.style.backgroundColor = ''; // Resetear tinte del body
 
                 const statusZonaF = checkZonaFStatus(coords.lat, coords.lng);
                 nativeLog(`Check Zona F: Lat ${coords.lat}, Lng ${coords.lng} -> ${statusZonaF}`);
 
                 if (statusZonaF === "DENTRO") {
                     zonaFIndicator.textContent = 'Dentro de Zona F';
-                    zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo
-                    // Aplicar un tono rojizo sutil a toda la página
-                    document.body.style.boxShadow = 'inset 0 0 0 100vmax rgba(220, 53, 69, 0.07)'; 
-                    nativeLog('Aplicando tono rojizo a la página.');
-
+                    zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo para el indicador
+                    document.body.style.backgroundColor = 'rgba(255, 200, 200, 0.2)'; // Tono rojizo sutil para el body
+                    nativeLog('Aplicando tinte rojizo al body.');
                 } else { // FUERA
                     zonaFIndicator.textContent = 'Fuera de Zona F';
-                    zonaFIndicator.style.backgroundColor = '#28a745'; // Verde
-                    document.body.style.boxShadow = ''; // Quitar tono rojizo
-                    nativeLog('Quitando tono rojizo de la página.');
+                    zonaFIndicator.style.backgroundColor = '#28a745'; // Verde para el indicador
+                    // El backgroundColor del body ya se reseteó arriba, no es necesario hacerlo de nuevo aquí.
+                    nativeLog('Quitando tinte rojizo del body (si estaba).');
                 }
             }
         }
@@ -402,6 +401,7 @@
                                     swalConfirm.click();
                                     nativeLog("Click automático en Ok confirmación");
                                 }
+
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
@@ -443,7 +443,7 @@
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
                 const t = d.textContent || '';
-                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) { 
+                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) {
                     createSimulationButton();
                     nativeLog("Score válido detectado: " + t.match(/Score:\s*(\d+)/)?.[1]);
                     return;
