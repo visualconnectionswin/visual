@@ -206,9 +206,12 @@
                     nativeLog('Sin coordenadas válidas, eliminando botones y status.');
                     container.remove();
                 }
-                // Asegurarse de quitar el tinte si no hay coordenadas
-                document.body.style.backgroundColor = '';
-                nativeLog('Fondo del body reseteado por falta de coordenadas.');
+                // Eliminar el overlay rojo si existe
+                var existingOverlay = document.getElementById('zona-f-background-overlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                    nativeLog('Overlay rojo eliminado (sin coordenadas válidas).');
+                }
                 return;
             }
 
@@ -277,46 +280,45 @@
                 const statusZonaF = checkZonaFStatus(coords.lat, coords.lng);
                 nativeLog(`Check Zona F: Lat ${coords.lat}, Lng ${coords.lng} -> ${statusZonaF}`);
 
+                // Eliminar cualquier overlay existente primero
+                var existingOverlay = document.getElementById('zona-f-background-overlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                    nativeLog('Overlay anterior eliminado para actualización');
+                }
+
                 if (statusZonaF === "DENTRO") {
                     zonaFIndicator.textContent = 'Dentro de Zona F';
                     zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo para el indicador
                     zonaFIndicator.style.color = '#ffffff';
                     
-                    // Modificación para asegurar que el fondo rojo se aplique correctamente
-                    var redBackground = document.createElement('div');
-                    redBackground.id = 'zona-f-background-overlay';
-                    redBackground.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 200, 200, 0.2); z-index: -1; pointer-events: none;';
+                    // Crear un overlay rojo que cubra toda la página
+                    var redOverlay = document.createElement('div');
+                    redOverlay.id = 'zona-f-background-overlay';
+                    redOverlay.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background-color: rgba(255, 0, 0, 0.15);
+                        pointer-events: none;
+                        z-index: 9999;
+                    `;
+                    document.body.appendChild(redOverlay);
+                    nativeLog('Nuevo overlay rojo aplicado con posición fixed, z-index alto, y dimensiones vw/vh');
                     
-                    // Eliminar el overlay anterior si existe
-                    var existingOverlay = document.getElementById('zona-f-background-overlay');
-                    if (existingOverlay) {
-                        existingOverlay.remove();
-                    }
-                    
-                    document.body.appendChild(redBackground);
-                    nativeLog('Aplicando overlay rojo al body con posición fixed.');
                 } else if (statusZonaF === "FUERA") {
                     zonaFIndicator.textContent = 'Fuera de Zona F';
                     zonaFIndicator.style.backgroundColor = '#28a745'; // Verde para el indicador
                     zonaFIndicator.style.color = '#ffffff';
+                    nativeLog('Indicador verde establecido (FUERA de Zona F)');
                     
-                    // Eliminar el overlay rojo si existe
-                    var existingOverlay = document.getElementById('zona-f-background-overlay');
-                    if (existingOverlay) {
-                        existingOverlay.remove();
-                        nativeLog('Overlay rojo eliminado (FUERA de Zona F).');
-                    }
                 } else { // Caso por defecto o "Comprobando" si checkZonaFStatus devolviera algo más
                     zonaFIndicator.textContent = 'Comprobando Zona F';
                     zonaFIndicator.style.backgroundColor = '#808080'; // Gris
                     zonaFIndicator.style.color = '#ffffff';
-                    
-                    // Eliminar el overlay rojo si existe
-                    var existingOverlay = document.getElementById('zona-f-background-overlay');
-                    if (existingOverlay) {
-                        existingOverlay.remove();
-                        nativeLog('Overlay rojo eliminado (Comprobando Zona F).');
-                    }
+                    nativeLog('Indicador gris establecido (Comprobando Zona F)');
                 }
             }
         }
