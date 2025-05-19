@@ -2,9 +2,12 @@
     // Usar el log nativo para depurar el JS desde Android Studio
     function nativeLog(message) {
         try {
-            window.AndroidInterface.log('Cobertura JS: ' + message);
+            // Asegurarse de que el mensaje es una cadena
+            const msgStr = (typeof message === 'object') ? JSON.stringify(message) : String(message);
+            window.AndroidInterface.log('Cobertura JS: ' + msgStr);
         } catch(e) {
-            console.log('Fallback Console (Cobertura JS): ' + message);
+            const fallbackMsg = (typeof message === 'object') ? JSON.stringify(message) : String(message);
+            console.log('Fallback Console (Cobertura JS): ' + fallbackMsg);
         }
     }
 
@@ -14,9 +17,7 @@
     // == CONSTANTE IMPORTANTE: Pega aquí la URL de tu Web App de Google Apps Script ==
     // =========================================================================
     const APP_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzAb9QwsltGjAIBjzdxTr2BiJlwJ6JRWcz9XgWirsGRGhftygGgAXcqWaSy8bwD4VOf/exec'; 
-    // Ejemplo: 'https://script.google.com/macros/s/AKfycby.../exec';
     // =========================================================================
-
 
     // 1. Intentar hacer clic en el botón "Nuevo Lead"
     setTimeout(function() {
@@ -99,7 +100,7 @@
                     const lat = parseFloat(latInput.value);
                     const lng = parseFloat(lngInput.value);
                     if (!isNaN(lat) && !isNaN(lng)) {
-                        if (lat !== 0 || lng !== 0) { // Considerar 0,0 como inválido si aplica
+                        if (lat !== 0 || lng !== 0) {
                             return { lat, lng };
                         } else {
                             nativeLog('WARN: Coordenadas (0,0) encontradas en inputs.');
@@ -120,42 +121,57 @@
         let zonaFCheckInProgress = false;
 
         async function checkZonaF(lat, lng) {
-            if (APP_SCRIPT_WEB_APP_URL === 'PEGA_AQUI_LA_URL_DE_TU_WEB_APP') {
-                nativeLog('ERROR: URL de Web App no configurada.');
+            if (APP_SCRIPT_WEB_APP_URL === 'PEGA_AQUI_LA_URL_DE_TU_WEB_APP' || !APP_SCRIPT_WEB_APP_URL) {
+                nativeLog('ERROR CRÍTICO: URL de Web App no configurada.');
                 updateZonaFStatusIndicator('ERROR_CONFIG');
                 return;
             }
             
-            // Evitar múltiples llamadas si ya hay una en progreso para las mismas coords
-            // O si las coordenadas no han cambiado desde la última comprobación exitosa/fallida
-            if (zonaFCheckInProgress && lat === lastCheckedLat && lng === lastCheckedLng) {
-                nativeLog('Comprobación Zona F ya en progreso para estas coordenadas.');
+            if (zonaFCheckInProgress) {
+                nativeLog('Comprobación Zona F ya en progreso. Se omite esta llamada.');
                 return;
             }
-            if (!zonaFCheckInProgress && lat === lastCheckedLat && lng === lastCheckedLng) {
-                // Si no está en progreso pero las coords son las mismas que la última vez,
-                // podríamos asumir que el estado no ha cambiado, pero el requisito es "cada vez que aparezca"
-                // por lo que procedemos, pero actualizamos que estamos comprobando.
-                 nativeLog('Coords no cambiadas, pero se re-comprueba Zona F según requisito.');
-            }
-
 
             zonaFCheckInProgress = true;
-            lastCheckedLat = lat; // Actualizar antes de la llamada
+            lastCheckedLat = lat; // Actualizar aquí, antes de la llamada. Estas son las coords para las que se está INTENTANDO.
             lastCheckedLng = lng;
             updateZonaFStatusIndicator('COMPROBANDO');
             nativeLog(`Comprobando Zona F para: ${lat}, ${lng}`);
 
             try {
-                const response = await fetch(`${APP_SCRIPT_WEB_APP_URL}?lat=${lat}&lon=${lng}`);
+                const urlToFetch = `${APP_SCRIPT_WEB_APP_URL}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+                nativeLog(`Intentando fetch a: ${urlToFetch}`);
+                const response = await fetch(urlToFetch);
+                nativeLog(`Respuesta recibida, status: ${response.status}, ok: ${response.ok}`);
+
                 if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
+                    const errorText = await response.text(); 
+                    nativeLog(`Error HTTP, cuerpo: ${errorText}`);
+                    // Lanzar un error que incluya el status y el cuerpo para más info.
+                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
                 }
-                const data = await response.json();
-                nativeLog('Respuesta de Zona F: ' + JSON.stringify(data));
-                updateZonaFStatusIndicator(data.status); // e.g., "DENTRO_ZONA_F", "FUERA_ZONA_F"
+                
+                const responseText = await response.text();
+                nativeLog(`Respuesta de Zona F (texto crudo): ${responseText}`);
+                try {
+                    const data = JSON.parse(responseText); 
+                    nativeLog('Respuesta de Zona F (JSON parseado): ' + JSON.stringify(data));
+                    if (data && data.status) {
+                        updateZonaFStatusIndicator(data.status);
+                    } else {
+                        nativeLog('ERROR: Respuesta JSON no tiene propiedad status. Data: ' + JSON.stringify(data));
+                        updateZonaFStatusIndicator('ERROR_API_FORMAT');
+                    }
+                } catch (parseError) {
+                    nativeLog('ERROR parseando JSON de Zona F: ' + parseError.message + ". Respuesta original: " + responseText);
+                    updateZonaFStatusIndicator('ERROR_API_FORMAT'); 
+                }
+
             } catch (error) {
-                nativeLog('ERROR comprobando Zona F: ' + error.message);
+                // Asegurarse de que el error es una cadena para nativeLog
+                const errorMessage = error.message ? error.message : String(error);
+                const errorStack = error.stack ? `\nStack: ${error.stack}` : '';
+                nativeLog('ERROR comprobando Zona F (catch general): ' + errorMessage + errorStack);
                 updateZonaFStatusIndicator('ERROR_API');
             } finally {
                 zonaFCheckInProgress = false;
@@ -167,18 +183,18 @@
             if (!statusElement) return;
 
             let text = 'Comprobando Zona F...';
-            let color = '#808080'; // Gris
-            let backgroundColor = '#f0f0f0'; // Gris claro para fondo
+            let color = '#333333'; 
+            let backgroundColor = '#e9ecef'; 
 
             switch (status) {
                 case 'DENTRO_ZONA_F':
                     text = 'Dentro de Zona F';
-                    color = '#ffffff'; // Blanco
+                    color = '#ffffff'; 
                     backgroundColor = '#dc3545'; // Rojo
                     break;
                 case 'FUERA_ZONA_F':
                     text = 'Fuera de Zona F';
-                    color = '#ffffff'; // Blanco
+                    color = '#ffffff'; 
                     backgroundColor = '#28a745'; // Verde
                     break;
                 case 'ERROR_API':
@@ -186,24 +202,36 @@
                     color = '#ffffff';
                     backgroundColor = '#ffc107'; // Amarillo/Naranja advertencia
                     break;
-                 case 'ERROR_CONFIG':
-                    text = 'Error Configuración';
+                case 'ERROR_PARAMS': // Nuevo estado desde GS
+                    text = 'Error en Coordenadas';
                     color = '#ffffff';
                     backgroundColor = '#6c757d'; // Gris oscuro
                     break;
+                case 'ERROR_SERVER': // Nuevo estado desde GS
+                    text = 'Error Servidor';
+                    color = '#ffffff';
+                    backgroundColor = '#6c757d'; // Gris oscuro
+                    break;
+                case 'ERROR_CONFIG':
+                    text = 'Error Configuración URL';
+                    color = '#ffffff';
+                    backgroundColor = '#17a2b8'; // Cyan para error de config
+                    break;
+                case 'ERROR_API_FORMAT':
+                    text = 'Error Formato Resp.';
+                    color = '#ffffff';
+                    backgroundColor = '#6f42c1'; // Púrpura
+                    break;
                 case 'COMPROBANDO':
                 default:
-                    text = 'Comprobando Zona F...';
-                    color = '#333333'; // Texto oscuro para fondo claro
-                    backgroundColor = '#e9ecef'; // Gris muy claro
+                    // Valores por defecto ya establecidos
                     break;
             }
             statusElement.textContent = text;
             statusElement.style.color = color;
             statusElement.style.backgroundColor = backgroundColor;
-            statusElement.style.borderColor = backgroundColor; // Hacer el borde del mismo color o uno ligeramente más oscuro
+            statusElement.style.borderColor = backgroundColor; 
         }
-
 
         function gestionarBotones() {
             const coords = obtenerCoordenadas();
@@ -213,9 +241,9 @@
                 if (container) {
                     nativeLog('Sin coordenadas válidas, eliminando botones y status.');
                     container.remove();
-                    // Resetear las últimas coordenadas comprobadas para forzar una nueva revisión
                     lastCheckedLat = null; 
                     lastCheckedLng = null;
+                    zonaFCheckInProgress = false; // Asegurarse de resetear esto también
                 }
                 return;
             }
@@ -228,7 +256,7 @@
                 container.style.cssText = `
                     display: flex;
                     align-items: center;
-                    gap: 10px; /* Espacio entre el status y el botón */
+                    gap: 10px;
                     margin-top: 15px;
                     margin-bottom: 10px;
                     padding: 5px;
@@ -236,28 +264,25 @@
                     border-radius: 4px;
                 `;
 
-                // 1. Crear el indicador de Zona F (a la izquierda)
-                const zonaFStatusElement = document.createElement('span'); // Usar span para que sea inline-flex
+                const zonaFStatusElement = document.createElement('span');
                 zonaFStatusElement.id = 'zonaFStatusIndicatorNativo';
                 zonaFStatusElement.style.cssText = `
                     padding: 8px 12px;
-                    border: 1px solid; /* El color del borde se manejará en updateZonaFStatusIndicator */
+                    border: 1px solid; 
                     border-radius: 5px;
                     font-size: 13px;
                     font-weight: bold;
-                    flex-shrink: 0; /* Para que no se encoja si el texto es largo */
+                    flex-shrink: 0;
                 `;
-                updateZonaFStatusIndicator('COMPROBANDO'); // Estado inicial
-                container.appendChild(zonaFStatusElement);
+                container.appendChild(zonaFStatusElement); // Añadir antes de llamar a update para que exista
 
-                // 2. Crear el botón de Copiar Coordenadas (a la derecha)
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
                 botonCopiar.textContent = 'Copiar Coordenadas';
                 botonCopiar.type = 'button';
                 botonCopiar.style.cssText = `
                     padding: 8px 12px;
-                    background-color: #007bff; /* Azul */
+                    background-color: #007bff; 
                     color: #fff;
                     border: none;
                     border-radius: 5px;
@@ -266,7 +291,7 @@
                     flex-shrink: 0;
                 `;
                 botonCopiar.addEventListener('click', function() {
-                    const c = obtenerCoordenadas(); // Re-obtener por si acaso
+                    const c = obtenerCoordenadas(); 
                     if (c) {
                         const textoACopiar = c.lat + ',' + c.lng;
                         try {
@@ -283,8 +308,7 @@
                 });
                 container.appendChild(botonCopiar);
 
-                // Insertar el contenedor en el DOM
-                const refElement = document.querySelector('#lgdir'); // Referencia para inserción
+                const refElement = document.querySelector('#lgdir');
                 const parentContainer = refElement ? refElement.closest('.mb-10') || refElement.parentNode.parentNode : null;
                 if (parentContainer) {
                     parentContainer.parentNode.insertBefore(container, parentContainer.nextSibling);
@@ -294,30 +318,24 @@
                     fallbackContainer.appendChild(container);
                     nativeLog('WARN: Contenedor de botones y status insertado en ubicación de fallback.');
                 }
-            }
-            
-            // Siempre que el contenedor de botones exista (y por ende, coords son válidas)
-            // verificar la Zona F. La función checkZonaF tiene lógica para no repetir si no es necesario.
-            // OJO: El requisito es "cada vez que aparezca", lo cual este setInterval ya lo cubre.
-            // La lógica interna de checkZonaF evitará spam si las coords no cambian entre llamadas
-            // pero si el botón "desaparece" y "reaparece" con las mismas coords, se volverá a llamar.
-            if (coords.lat !== lastCheckedLat || coords.lng !== lastCheckedLng || !document.getElementById('zonaFStatusIndicatorNativo').textContent.includes('Zona F')) {
-                 // Llama solo si las coordenadas cambiaron O si el texto actual no es uno final (ej. "Comprobando")
-                 // Esto evita llamadas repetidas si el estado ya es "Dentro" o "Fuera" y las coords no cambian.
-                checkZonaF(coords.lat, coords.lng);
-            } else if (document.getElementById('zonaFStatusIndicatorNativo') && 
-                       (document.getElementById('zonaFStatusIndicatorNativo').textContent.includes('Error') || 
-                        document.getElementById('zonaFStatusIndicatorNativo').textContent.includes('Comprobando'))) {
-                // Si el estado actual es de error o comprobando, intenta de nuevo aunque las coords no hayan cambiado
-                checkZonaF(coords.lat, coords.lng);
+                // Después de crear el contenedor y el status element, iniciar la comprobación
+                checkZonaF(coords.lat, coords.lng); 
+            } else {
+                // El contenedor ya existe. Comprobar si las coordenadas cambiaron.
+                if ((coords.lat !== lastCheckedLat || coords.lng !== lastCheckedLng) && !zonaFCheckInProgress) {
+                    nativeLog('Coordenadas cambiaron o es un nuevo intento. Re-comprobando Zona F.');
+                    checkZonaF(coords.lat, coords.lng);
+                } else if (!zonaFCheckInProgress) {
+                    // Coords no cambiaron, no hay check en progreso.
+                    // nativeLog('Mismas coordenadas, no hay check en progreso. No se re-comprueba automáticamente.');
+                }
             }
         }
 
         nativeLog('Iniciando monitorización de coordenadas/estado...');
-        setInterval(gestionarBotones, 750); // Aumenté ligeramente el intervalo, 500ms es bastante agresivo para llamadas de red.
+        setInterval(gestionarBotones, 750);
 
-        // === INICIO: NUEVA FUNCIONALIDAD - MONITOREO PARA BOTÓN "REALIZAR SIMULACIÓN" ===
-        // ... (Tu código existente para el botón de simulación se mantiene aquí sin cambios) ...
+        // === INICIO: CÓDIGO SIMULACIÓN (SIN CAMBIOS, ASUMO QUE ESTÁ BIEN) ===
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
@@ -460,9 +478,9 @@
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
                 const t = d.textContent || '';
-                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) {
+                if (/Score:\s*(?:20[1-9]|[2-9]\d{2})/.test(t)) { // Score > 200
                     createSimulationButton();
-                    nativeLog("Score válido detectado: " + t.match(/Score:\s*(\d+)/)?.[1]);
+                    nativeLog("Score válido detectado: " + (t.match(/Score:\s*(\d+)/)?.[1] || "N/A"));
                     return;
                 }
             }
@@ -473,12 +491,9 @@
         const scoreDisplay = document.querySelector(SCORE_DISPLAY_SELECTOR);
         if (scoreDisplay) {
             nativeLog('Elemento score encontrado, configurando observer');
-            new MutationObserver(checkScoreAndToggleButton).observe(scoreDisplay, {
-                childList: true,
-                subtree: true,
-                characterData: true
-            });
-            checkScoreAndToggleButton();
+            const observer = new MutationObserver(checkScoreAndToggleButton);
+            observer.observe(scoreDisplay, { childList: true, subtree: true, characterData: true });
+            checkScoreAndToggleButton(); // Chequeo inicial
         } else {
             nativeLog('Elemento score no encontrado, programando chequeo periódico');
             const scoreCheckInterval = setInterval(() => {
@@ -486,16 +501,13 @@
                 if (scoreElement) {
                     clearInterval(scoreCheckInterval);
                     nativeLog('Elemento score encontrado posteriormente');
-                    new MutationObserver(checkScoreAndToggleButton).observe(scoreElement, {
-                        childList: true,
-                        subtree: true,
-                        characterData: true
-                    });
-                    checkScoreAndToggleButton();
+                    const observer = new MutationObserver(checkScoreAndToggleButton);
+                    observer.observe(scoreElement, { childList: true, subtree: true, characterData: true });
+                    checkScoreAndToggleButton(); // Chequeo inicial
                 }
             }, 1000);
         }
-        // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
+        // === FIN: CÓDIGO SIMULACIÓN ===
 
     }, 1000); // Delay principal
 
