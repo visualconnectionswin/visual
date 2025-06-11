@@ -626,6 +626,55 @@
             nativeLog('WARN: No se encontraron #documento_identidad o #tipo_doc para auto-selección.');
         }
 
+        // Asegúrate de que el DOM esté completamente cargado antes de ejecutar el script.
+        $(document).ready(function() {
+        // --- PASO 1: Ocultar visualmente el paso final y su contenido ---
+        // Esto se ejecuta una vez para limpiar la interfaz.
+
+        // Oculta el paso "Confirmar venta" en la barra de navegación del stepper.
+        $('#page_content_3').hide();
+
+        // Oculta el contenido de la página 3 para que nunca sea visible.
+        $('.page_3').hide();
+
+
+        // --- PASO 2: Crear una función para gestionar el estado del botón "Continuar" ---
+        function gestionarEstadoBotonContinuar() {
+            // Comprueba si la página activa actual es la página 2 ("Selección de oferta").
+            // La clase "current" indica la página activa.
+            if ($('.page_2').hasClass('current')) {
+                // Si estamos en la página 2, deshabilitamos y ocultamos el botón "Continuar".
+                $('#continuar').prop('disabled', true).hide();
+            } else {
+                // Si estamos en cualquier otra página (0 o 1), nos aseguramos de que el botón esté habilitado y visible.
+                $('#continuar').prop('disabled', false).show();
+            }
+        }
+
+
+        // --- PASO 3: Ejecutar la función en los momentos correctos ---
+
+        // Al hacer clic en el botón "Continuar"
+        $('#continuar').on('click', function() {
+            // El framework del stepper necesita un instante para actualizar las clases.
+            // Usamos un pequeño retardo (setTimeout) para comprobar el estado DESPUÉS de que se haya movido a la siguiente página.
+            setTimeout(function() {
+                gestionarEstadoBotonContinuar();
+            }, 100); // 100 milisegundos es suficiente.
+        });
+
+        // Al hacer clic en el botón "Anterior"
+        $('#anterior').on('click', function() {
+            // Hacemos lo mismo para asegurarnos de que el botón "Continuar" se reactive si el usuario retrocede desde la página 2.
+            setTimeout(function() {
+                gestionarEstadoBotonContinuar();
+            }, 100);
+        });
+
+        // Ejecutamos la función una vez al cargar por si acaso el modal se abre en un estado intermedio (aunque normalmente empieza en la página 0).
+        gestionarEstadoBotonContinuar();
+        });
+
     }, 1000); // Fin del setTimeout de la lógica principal
 
     // Secuencia de clicks adicionales (originalmente en tu jsWithCoords)
