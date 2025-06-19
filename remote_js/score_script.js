@@ -85,11 +85,11 @@
                 page1.classList.add('current');
                 pageContent0.classList.remove('current');
                 pageContent1.classList.add('current');
-                
+
                 // Muestra el botón "anterior" y habilita el botón "continuar"
                 const anteriorBtn = await waitForElement("#anterior");
                 anteriorBtn.style.display = 'block';
-                
+
                 const continuarBtn = document.querySelector("#continuar"); // Puede no existir siempre
                 if (continuarBtn) {
                     continuarBtn.disabled = false;
@@ -115,24 +115,6 @@
                 vendedorDiv.remove();
             }
 
-            const domicilioDiv = document.querySelector('select[name="bus_tip"]')?.closest('div.row.g-9');
-            if (domicilioDiv) {
-                domicilioDiv.remove();
-            }
-
-            const predioDivs = document.querySelectorAll('select[name="ide_pre_rel"]');
-            predioDivs.forEach(predioEl => {
-                const parentDiv = predioEl.closest('div.row.g-9.mb-8');
-                if (parentDiv) {
-                    parentDiv.remove();
-                }
-            });
-
-            const observacionesDiv = document.querySelector('textarea[name="bus_obs"]')?.closest('div.col-md-12.fv-row');
-            if (observacionesDiv) {
-                observacionesDiv.remove();
-            }
-
             const selectores = [
                 '#kt_modal_create_account > div > div > div.modal-header',
                 '#kt_create_account_stepper > div.stepper-nav.py-5',
@@ -140,11 +122,12 @@
                 '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(6)',
                 '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(8)',
                 '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(10) > div > label',
-                '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(11)',
+                //'textarea[name="bus_obs"]#observaciones', // Se elimina el contenedor padre en su lugar.
+                //'#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(11)', // Se elimina el contenedor padre en su lugar.
                 '#register_search',
                 '#kt_create_account_stepper > div.d-flex.flex-stack.pt-15',
-                '#nuevoCliente',
-                '#nuevo_seguimiento > div.page_1.current > div > div > div > div.col-lg-7 > div:nth-child(12) > div > span.fw-bolder' // Este es el selector original del contador, se mantiene por si las funciones de abajo fallan
+                '#nuevoCliente'
+                //'#nuevo_seguimiento > div.page_1.current > div > div > div > div.col-lg-7 > div:nth-child(12) > div > span.fw-bolder' // Se elimina el contenedor padre en su lugar.
             ];
 
             selectores.forEach(selector => {
@@ -161,6 +144,19 @@
                 }
             });
 
+            // Bloque para eliminar elementos solicitados explícitamente que requieren lógica de traversal.
+            try {
+                document.querySelector('#info-cliente-general')?.remove();
+                document.querySelector('select#tipo_servicio')?.closest('.row.g-9')?.remove();
+                document.querySelectorAll('select#relacionPredio').forEach(el => el.closest('.row.g-9.mb-8')?.remove());
+                document.querySelector('textarea#observaciones')?.closest('.col-md-12.fv-row')?.remove();
+            } catch (e) {
+                if (typeof AndroidInterface !== 'undefined' && AndroidInterface.logError) {
+                    AndroidInterface.logError("Error en bloque de eliminación de contenedores: " + e.message);
+                }
+            }
+
+
             // Función específica para ocultar el contador usando múltiples métodos
             function ocultarContador() {
                 try {
@@ -168,7 +164,7 @@
                     const xpath = '/html/body/div[1]/div[1]/div[1]/div[4]/div/div/div[2]/div/div[2]/div[2]/div/div/div/div[2]/div[10]'; // Ajusta si la estructura cambia mucho
                     const xpathResult = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                     const elementByXPath = xpathResult.singleNodeValue;
-                    
+
                     if (elementByXPath) {
                         const spanContador = elementByXPath.querySelector('span.fw-bolder');
                         if (spanContador && spanContador.textContent.includes('Quedan')) { // Más específico
