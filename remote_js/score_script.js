@@ -229,12 +229,9 @@
             searchBtn.addEventListener('click', () => {
                 const valorDocumento = document.querySelector('#documento_identidad')?.value || '';
                 if (valorDocumento.trim().length > 0) {
-                    fetch('https://script.google.com/macros/s/AKfycbxLWGzCRma8CrUhprRN11T-yWYySZBPBr_o2J4d7m8ubZ-Fn34VpXnT812tZ09Mv_L7/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbzt3cs-uzpPrem6xRvRB2SKS3nLP3Sd4M-bkn8Woy6e8ABW7P619E4Pe3wNRhu6wZR-/exec', {
                         method: 'POST',
                         mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
                         body: JSON.stringify({
                             documento: valorDocumento
                         })
