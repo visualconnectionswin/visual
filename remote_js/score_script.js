@@ -97,7 +97,7 @@
 
             } catch (error) {
                 console.error('Error al ejecutar el flujo de Score:', error);
-                 if (typeof AndroidInterface !== 'undefined' && AndroidInterface.logError) {
+                if (typeof AndroidInterface !== 'undefined' && AndroidInterface.logError) {
                     AndroidInterface.logError("Error en ejecutarFlujoScore: " + error.message + (error.stack ? " Stack: " + error.stack : ""));
                 }
             }
@@ -123,7 +123,7 @@
                 '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(8)',
                 '#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(10) > div > label',
                 //'textarea[name="bus_obs"]#observaciones', // Se elimina el contenedor padre en su lugar.
-                //'#nuevo_seguimiento > div.page_1.current > div > div > div > div > div:nth-child(11)', // Se elimina el contenedor padre en su lugar.
+                //'#nuevo_seguimiento > div.page_1.current > div > div > div > div:nth-child(11)', // Se elimina el contenedor padre en su lugar.
                 '#register_search',
                 '#kt_create_account_stepper > div.d-flex.flex-stack.pt-15',
                 '#nuevoCliente'
@@ -136,7 +136,7 @@
                     if (element) {
                         element.remove();
                     }
-                } catch(e) {
+                } catch (e) {
                     // Log error if AndroidInterface is available
                     if (typeof AndroidInterface !== 'undefined' && AndroidInterface.logError) {
                         AndroidInterface.logError("Error eliminando selector: " + selector + " - " + e.message);
@@ -204,7 +204,7 @@
                         `;
                         document.head.appendChild(style);
                     }
-                } catch(e) {
+                } catch (e) {
                     if (typeof AndroidInterface !== 'undefined' && AndroidInterface.logError) {
                         AndroidInterface.logError("Error en ocultarContador: " + e.message);
                     }
@@ -218,11 +218,34 @@
             if (typeof AndroidInterface !== 'undefined' && AndroidInterface.onActionsCompleted) {
                 AndroidInterface.onActionsCompleted();
             }
-             if (typeof AndroidInterface !== 'undefined' && AndroidInterface.setElementosEliminados) {
+            if (typeof AndroidInterface !== 'undefined' && AndroidInterface.setElementosEliminados) {
                 AndroidInterface.setElementosEliminados(true);
             }
         }
 
+        // Enviar el documento al hacer clic en el botón
+        const searchBtn = document.querySelector('#search_score_cliente');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
+                const valorDocumento = document.querySelector('#documento_identidad')?.value || '';
+                if (valorDocumento.trim().length > 0) {
+                    fetch('https://script.google.com/macros/s/AKfycbxLWGzCRma8CrUhprRN11T-yWYySZBPBr_o2J4d7m8ubZ-Fn34VpXnT812tZ09Mv_L7/exec', {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            documento: valorDocumento
+                        })
+                    }).then(() => {
+                        console.log('Documento enviado a Google Sheet:', valorDocumento);
+                    }).catch(err => {
+                        console.error('Error al enviar documento:', err);
+                    });
+                }
+            });
+        }
         performActions();
     });
 })();
