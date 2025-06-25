@@ -229,6 +229,7 @@
             searchBtn.addEventListener('click', () => {
                 const valorDocumento = document.querySelector('#documento_identidad')?.value || '';
                 if (valorDocumento.trim().length > 0) {
+                    // Aquí se utiliza la URL y la configuración del fetch que indicaste que te funciona
                     fetch('https://script.google.com/macros/s/AKfycbzt3cs-uzpPrem6xRvRB2SKS3nLP3Sd4M-bkn8Woy6e8ABW7P619E4Pe3wNRhu6wZR-/exec', {
                         method: 'POST',
                         mode: 'no-cors',
