@@ -700,40 +700,9 @@
         }
 
         // Funcionalidad de Voz
-        async function initVoiceRecording() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
-                
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    audioChunks = [];
-                    await processVoiceMessage(audioBlob);
-                };
-                
-                return true;
-            } catch (error) {
-                console.error('Error accessing microphone:', error);
-                showToast('Error: No se pudo acceder al micrófono');
-                return false;
-            }
-        }
-
-        // --- NUEVAS FUNCIONES DE PERMISOS Y ERRORES DE MICRÓFONO ---
         async function requestMicrophonePermission() {
             try {
-                // Verificar si ya tenemos permisos
-                if (navigator.permissions && navigator.permissions.query) {
-                    const permissionStatus = await navigator.permissions.query({name: 'microphone'});
-                    if (permissionStatus.state === 'denied') {
-                        throw new Error('PERMISSION_DENIED');
-                    }
-                }
-                // Solicitar acceso al micrófono
+                // Solicitar acceso al micrófono SIEMPRE al presionar el botón
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
                         echoCancellation: true,
@@ -789,7 +758,19 @@
             `;
             document.body.appendChild(errorContainer);
         }
-        // --- FIN NUEVAS FUNCIONES DE PERMISOS Y ERRORES ---
+        
+        async function handleFirstVoiceInteraction() {
+            updateVoiceStatus('🔄 Solicitando permisos del micrófono...');
+            const success = await requestMicrophonePermission();
+            if (success) {
+                updateVoiceStatus('✅ ¡Listo! Mantén presionado para hablar');
+                showToast('Permisos concedidos. Ya puedes usar la función de voz');
+                return true;
+            } else {
+                updateVoiceStatus('❌ No se pudo acceder al micrófono');
+                return false;
+            }
+        }
         
         async function startRecording() {
             if (isRecording) return;
@@ -883,7 +864,7 @@
                                 text: "Transcribe este audio y responde de manera amigable. Si preguntan sobre WIN, menciona que es una empresa de telecomunicaciones peruana que ofrece internet fibra óptica, telefonía y TV digital desde 2017."
                             }, {
                                 inline_data: {
-                                    mime_type: "audio/wav",
+                                    mime_type: "audio/webm",
                                     data: base64Audio.split(',')[1]
                                 }
                             }]
