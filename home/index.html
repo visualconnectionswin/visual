@@ -1,1 +1,1219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>WIN</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #FF5A00;
+            --secondary-color: #FFB300;
+            --accent-color: #0078D7;
+            --dark-color: #222222;
+            --light-color: #FFFFFF;
+            --background-color: #F8F9FA;
+            --header-height: 60px;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            padding: 0;
+            position: relative;
+        }
+
+        header {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            color: var(--light-color);
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-left: 10px;
+        }
+
+        /* Voice Button in Header */
+        .voice-button-header {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .voice-button-header:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .voice-button-header.recording {
+            background: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height) - 50px);
+        }
+
+        /* Carousel Styles */
+        .carousel-container {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            height: calc(100vh - var(--header-height) - 80px);
+            min-height: 300px;
+            overflow: hidden;
+        }
+
+        .carousel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .carousel-images {
+            display: flex;
+            height: 100%;
+            transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .carousel-images img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            flex-shrink: 0;
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .carousel-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 22px;
+            color: var(--light-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 10;
+            backdrop-filter: blur(3px);
+        }
+
+        .carousel-button:hover {
+            background-color: rgba(255, 90, 0, 0.7);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .carousel-button.left {
+            left: 15px;
+        }
+
+        .carousel-button.right {
+            right: 15px;
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            z-index: 20;
+            gap: 8px;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .indicator.active {
+            background-color: var(--primary-color);
+            transform: scale(1.2);
+            border-color: var(--light-color);
+        }
+
+        /* Information Section */
+        .info-section {
+            background-color: white;
+            padding: 15px 20px;
+            margin: 0;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .info-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            font-size: 1.2em;
+            position: relative;
+            display: inline-block;
+        }
+
+        .info-section h2:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 40px;
+            height: 3px;
+            background: var(--secondary-color);
+        }
+
+        .info-section p {
+            margin-bottom: 0;
+            font-size: 0.95em;
+            line-height: 1.5;
+            color: #555;
+        }
+
+        /* Voice Chat Section */
+        .voice-chat-section {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            margin: 0;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .voice-chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .voice-chat-title {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .voice-button-main {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 90, 0, 0.3);
+            margin: 10px;
+        }
+
+        .voice-button-main:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255, 90, 0, 0.4);
+        }
+
+        .voice-button-main.recording {
+            background: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        .voice-status {
+            margin: 15px 0;
+            font-size: 1em;
+            color: #666;
+            min-height: 24px;
+        }
+
+        .voice-response {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            display: none;
+        }
+
+        .voice-response.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .response-header {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 5px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 12px;
+            color: #888;
+            font-size: 0.8em;
+            background-color: #f1f1f1;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 90, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            border-bottom-color: var(--secondary-color);
+            animation: spin 1.2s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.3);
+            z-index: 15;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--primary-color);
+            transition: width linear;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .carousel-button {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .indicator {
+                width: 10px;
+                height: 10px;
+            }
+            
+            .carousel-container {
+                height: calc(100vh - var(--header-height) - 100px);
+            }
+
+            .voice-button-main {
+                width: 70px;
+                height: 70px;
+                font-size: 26px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            .carousel-container {
+                height: calc(100vh - var(--header-height) - 40px);
+            }
+            
+            .info-section {
+                padding: 10px 15px;
+            }
+            
+            .info-section p {
+                font-size: 0.85em;
+            }
+            
+            footer {
+                padding: 8px;
+            }
+        }
+
+        .zoom-effect img {
+            transition: transform 0.5s ease;
+        }
+
+        .zoom-effect:hover img {
+            transform: scale(1.05);
+        }
+        /* Estilos para notificaciones de error de micr贸fono */
+        .error-notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .error-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .error-content h4 {
+            color: #ff4444;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        .error-content p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .error-content button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div style="display: flex; align-items: center;">
+                <div class="logo">WIN</div>
+                <div class="subtitle">Con茅ctate con lo mejor</div>
+            </div>
+            <button class="voice-button-header" id="voiceButtonHeader" title="Nota de voz">
+                馃帳
+            </button>
+        </div>
+    </header>
+    <div class="main-content">
+        <div class="container">
+            <div id="carousel-container" class="carousel-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            <div class="info-section">
+                <h2>Acerca de WIN</h2>
+                <p>Somos una empresa de telecomunicaciones peruana que desde el 2017 brinda servicio de internet hogar 100% fibra 贸ptica (FTTH) con velocidades de hasta 1000 Mbps, telefon铆a fija y televisi贸n digital.</p>            
+            </div>
+            <div class="voice-chat-section">
+                <div class="voice-chat-container">
+                    <h3 class="voice-chat-title">馃 Asistente de Voz WIN</h3>
+                    <div class="instructions" style="background: #f0f8ff; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--primary-color);">
+                        <p><strong>馃帳 Instrucciones:</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Al usar por primera vez, tu navegador pedir谩 permisos para el micr贸fono</li>
+                            <li>Haz clic en "Permitir" para habilitar la funci贸n de voz</li>
+                            <li>Mant茅n presionado el bot贸n mientras hablas</li>
+                            <li>Suelta para enviar tu mensaje</li>
+                        </ul>
+                    </div>
+                    <p style="color: #666; margin-bottom: 20px;">Mant茅n presionado para hablar y hacer preguntas sobre WIN</p>
+                    <button class="voice-button-main" id="voiceButtonMain">
+                        馃帳
+                    </button>
+                    <div class="voice-status" id="voiceStatus">
+                        Presiona el bot贸n y habla
+                    </div>
+                    <div class="voice-response" id="voiceResponse">
+                        <div class="response-header">Respuesta del Asistente:</div>
+                        <div id="responseText"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2025 WIN - Todos los derechos reservados</p>
+    </footer>
+    <script>
+        // Variables globales para el carrusel
+        let currentIndex = 0;
+        let images = [];
+        let autoplayDuration = 5000;
+        let progressInterval;
+        let progressValue = 0;
+        let autoplayInterval;
+
+        // Variables para la funcionalidad de voz
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let microphonePermissionRequested = false;
+        
+        // IMPORTANTE: Reemplaza con tu API Key de Gemini
+        const GEMINI_API_KEY = "AIzaSyA1iBEtUGezNR-0g_evqmSTaTVzrRS-8iw";
+        
+        // Variable global para almacenar el contexto
+let winContext = null;
+
+// Funci贸n para cargar el contexto WIN
+async function loadWinContext() {
+    try {
+        const response = await fetch('./contexto-win.json');
+        winContext = await response.json();
+        console.log('Contexto WIN cargado exitosamente');
+    } catch (error) {
+        console.error('Error loading WIN context:', error);
+        winContext = null;
+    }
+}
+
+// Funci贸n para crear el prompt con contexto
+function createContextualPrompt(userMessage = "") {
+    if (!winContext) {
+        return "Responde de manera amigable sobre WIN, empresa de telecomunicaciones peruana.";
+    }
+
+    const prompt = `
+Eres ${winContext.identidad.nombre}, un asistente virtual de ${winContext.identidad.empresa}.
+
+INFORMACI脫N DE LA EMPRESA:
+- Empresa: WIN (se pronuncia 'win') (${winContext.informacion_empresa.fundacion})
+- Servicios: ${winContext.informacion_empresa.servicios.join(', ')}
+- Eslogan: "${winContext.informacion_empresa.eslogan}"
+- Tecnolog铆a: ${winContext.informacion_empresa.tecnologia}
+
+INSTRUCCIONES:
+${winContext.instrucciones_ia.comportamiento.map(inst => `- ${inst}`).join('\n')}
+
+INFORMACI脫N PARA RESPONDER:
+${JSON.stringify(winContext.preguntas_frecuentes, null, 2)}
+
+REGLAS DE FACTURACI脫N (si preguntan sobre fechas de pago/facturaci贸n):
+${JSON.stringify(winContext.facturacion, null, 2)}
+
+Responde de manera amigable y profesional. Si te preguntan sobre facturaci贸n, usa este formato:
+${winContext.instrucciones_ia.formato_respuesta_facturacion}
+
+El usuario pregunta: "${userMessage}"
+Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
+
+    return prompt;
+}
+
+// Cargar im锟斤拷genes del carrusel
+        async function loadImages() {
+            try {
+                document.getElementById('carousel-container').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+                
+                const response = await fetch('https://raw.githubusercontent.com/visualconnectionswin/visual/refs/heads/main/imagenes_win.json');
+                const data = await response.json();
+                images = data.images;
+                
+                if(images && images.length > 0) {
+                    document.getElementById('carousel-container').innerHTML = `
+                        <div class="carousel">
+                            <div class="carousel-images zoom-effect"></div>
+                            <button class="carousel-button left" onclick="prevImage()">&#10094;</button>
+                            <button class="carousel-button right" onclick="nextImage()">&#10095;</button>
+                            <div class="carousel-indicators" id="carousel-indicators"></div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="progress-bar"></div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    initCarousel();
+                } else {
+                    document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar las im锟斤拷genes</p>';
+                }
+            } catch(error) {
+                console.error('Error loading images:', error);
+                document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">Error al cargar las im锟斤拷genes: ' + error.message + '</p>';
+            }
+        }
+        
+        function initCarousel() {
+            const carouselImages = document.querySelector('.carousel-images');
+            const indicators = document.getElementById('carousel-indicators');
+            
+            carouselImages.innerHTML = '';
+            indicators.innerHTML = '';
+            
+            images.forEach((image, index) => {
+                const img = document.createElement('img');
+                img.src = image;
+                img.alt = 'Imagen WIN ' + (index + 1);
+                img.className = index === 0 ? 'fade-in' : '';
+                carouselImages.appendChild(img);
+                
+                const indicator = document.createElement('div');
+                indicator.className = 'indicator' + (index === 0 ? ' active' : '');
+                indicator.onclick = function() { goToImage(index); };
+                indicators.appendChild(indicator);
+            });
+            
+            showImage(currentIndex);
+            
+            if(images.length > 1) {
+                startAutoplay();
+            }
+        }
+        
+        function showImage(index) {
+            const carouselImages = document.querySelector('.carousel-images');
+            const indicators = document.querySelectorAll('.indicator');
+            const allImages = carouselImages.querySelectorAll('img');
+            
+            carouselImages.style.transform = 'translateX(' + (-index * 100) + '%)';
+            
+            allImages.forEach((img, i) => {
+                img.classList.remove('fade-in');
+                if (i === index) {
+                    void img.offsetWidth;
+                    img.classList.add('fade-in');
+                }
+            });
+            
+            indicators.forEach((indicator, i) => {
+                indicator.className = 'indicator' + (i === index ? ' active' : '');
+            });
+            
+            currentIndex = index;
+            resetProgressBar();
+        }
+        
+        function nextImage() {
+            stopAutoplay();
+            currentIndex = (currentIndex + 1) % images.length;
+            showImage(currentIndex);
+            startAutoplay();
+        }
+        
+        function prevImage() {
+            stopAutoplay();
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            showImage(currentIndex);
+            startAutoplay();
+        }
+        
+        function goToImage(index) {
+            if (index === currentIndex) return;
+            stopAutoplay();
+            showImage(index);
+            startAutoplay();
+        }
+        
+        function startAutoplay() {
+            stopAutoplay();
+            resetProgressBar();
+            startProgressBar();
+            
+            autoplayInterval = setInterval(() => {
+                nextImage();
+            }, autoplayDuration);
+        }
+        
+        function stopAutoplay() {
+            if(autoplayInterval) {
+                clearInterval(autoplayInterval);
+            }
+            if(progressInterval) {
+                clearInterval(progressInterval);
+            }
+        }
+        
+        function resetProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+                progressValue = 0;
+            }
+        }
+        
+        function startProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            if (!progressBar) return;
+            
+            progressValue = 0;
+            const updateFrequency = 30;
+            const incrementValue = (updateFrequency / autoplayDuration) * 100;
+            
+            progressInterval = setInterval(() => {
+                progressValue += incrementValue;
+                if (progressValue >= 100) {
+                    progressValue = 100;
+                    clearInterval(progressInterval);
+                }
+                progressBar.style.width = progressValue + '%';
+            }, updateFrequency);
+        }
+
+        // Funcionalidad de Voz
+        async function requestMicrophonePermission() {
+            try {
+                // Solicitar acceso al micr贸fono SIEMPRE al presionar el bot贸n
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                // Inicializar MediaRecorder con mejor configuraci贸n
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioChunks = [];
+                    await processVoiceMessage(audioBlob);
+                };
+                return true;
+            } catch (error) {
+                return handleMicrophoneError(error);
+            }
+        }
+        function handleMicrophoneError(error) {
+            let message = '';
+            let instructions = '';
+            if (error.name === 'NotAllowedError' || error.message === 'PERMISSION_DENIED') {
+                message = 'Permisos de micr贸fono denegados';
+                instructions = 'Ve a configuraci贸n del navegador y permite el acceso al micr贸fono para este sitio';
+            } else if (error.name === 'NotFoundError') {
+                message = 'No se encontr贸 micr贸fono';
+                instructions = 'Conecta un micr贸fono y recarga la p谩gina';
+            } else if (error.name === 'NotReadableError') {
+                message = 'Micr贸fono en uso por otra aplicaci贸n';
+                instructions = 'Cierra otras aplicaciones que usen el micr贸fono';
+            } else {
+                message = 'Error de acceso al micr贸fono';
+                instructions = 'Verifica que tu micr贸fono funcione correctamente';
+            }
+            showDetailedError(message, instructions);
+            return false;
+        }
+        function showDetailedError(message, instructions) {
+            const errorContainer = document.createElement('div');
+            errorContainer.className = 'error-notification';
+            errorContainer.innerHTML = `
+                <div class="error-content">
+                    <h4>馃毇 ${message}</h4>
+                    <p>${instructions}</p>
+                    <button onclick="this.parentElement.parentElement.remove()">Entendido</button>
+                </div>
+            `;
+            document.body.appendChild(errorContainer);
+        }
+        
+        async function handleFirstVoiceInteraction() {
+            updateVoiceStatus('馃帳 Solicitando permisos del micr贸fono...');
+            const success = await requestMicrophonePermission();
+            if (success) {
+                updateVoiceStatus('鉁?隆Listo! Mant茅n presionado para hablar');
+                showToast('Permisos concedidos. Ya puedes usar la funci贸n de voz');
+                return true;
+            } else {
+                updateVoiceStatus('鉂?No se pudo acceder al micr贸fono');
+                return false;
+            }
+        }
+        async function startRecording() {
+            if (isRecording) return;
+            // Si es la primera vez, solicitar permisos
+            if (!mediaRecorder) {
+                const success = await handleFirstVoiceInteraction();
+                if (!success) return;
+            }
+            try {
+                audioChunks = [];
+                mediaRecorder.start();
+                isRecording = true;
+                updateVoiceButtons(true);
+                updateVoiceStatus('馃帣锔?Grabando... (mant茅n presionado)');
+                hideVoiceResponse();
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                updateVoiceStatus('鉂?Error al iniciar grabaci贸n');
+                showToast('Error al iniciar la grabaci贸n');
+            }
+        }
+        function stopRecording() {
+            if (!isRecording || !mediaRecorder) return;
+            mediaRecorder.stop();
+            isRecording = false;
+            // Actualizar UI
+            updateVoiceButtons(false);
+            updateVoiceStatus('鈴?Procesando tu mensaje...');
+        }
+        function updateVoiceButtons(recording) {
+            const buttons = [
+                document.getElementById('voiceButtonHeader'),
+                document.getElementById('voiceButtonMain')
+            ];
+            buttons.forEach(button => {
+                if (button) {
+                    if (recording) {
+                        button.classList.add('recording');
+                        button.innerHTML = '馃帣锔?;
+                    } else {
+                        button.classList.remove('recording');
+                        button.innerHTML = '馃帳';
+                    }
+                }
+            });
+        }
+        function updateVoiceStatus(message) {
+            const statusElement = document.getElementById('voiceStatus');
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+        }
+        function showVoiceResponse(text) {
+            const responseElement = document.getElementById('voiceResponse');
+            const responseTextElement = document.getElementById('responseText');
+            
+            if (responseElement && responseTextElement) {
+                responseTextElement.textContent = text;
+                responseElement.classList.add('show');
+            }
+        }
+        function hideVoiceResponse() {
+            const responseElement = document.getElementById('voiceResponse');
+            if (responseElement) {
+                responseElement.classList.remove('show');
+            }
+        }
+        async function processVoiceMessage(audioBlob) {
+            try {
+                // Convertir audio a base64
+                const base64Audio = await blobToBase64(audioBlob);
+                // Crear el prompt con contexto
+                const contextualPrompt = createContextualPrompt();
+                // Enviar a Gemini API con contexto
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: contextualPrompt
+                            }, {
+                                inline_data: {
+                                    mime_type: "audio/webm",
+                                    data: base64Audio.split(',')[1]
+                                }
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 500
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0]) {
+                    const responseText = result.candidates[0].content.parts[0].text;
+                    showVoiceResponse(responseText);
+                    updateVoiceStatus('鉁?隆Listo! Presiona de nuevo para otra pregunta');
+                    
+                    // Opcional: Reproducir respuesta con s锟斤拷ntesis de voz
+                    speakResponse(responseText);
+                } else {
+                    throw new Error('No se recibi锟斤拷 respuesta v锟斤拷lida');
+                }
+                
+            } catch (error) {
+                console.error('Error processing voice message:', error);
+                updateVoiceStatus('鉂?Error al procesar el mensaje');
+                showToast('Error al procesar la nota de voz');
+            }
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        function speakResponse(text) {
+            if ('speechSynthesis' in window) {
+                // Eliminar emojis y caracteres especiales antes de sintetizar
+                let cleanText = text.replace(/[\u{1F300}-\u{1FAFF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{1F191}-\u{1F251}\u{1F004}-\u{1F0CF}\u{1F170}-\u{1F171}\u{1F17E}-\u{1F17F}\u{1F18E}\u{3030}\u{2B50}\u{2B06}\u{2194}-\u{21AA}\u{2934}-\u{2935}\u{25AA}-\u{25AB}\u{25FE}-\u{25FF}\u{25B6}\u{25C0}\u{25FB}-\u{25FC}\u{25FD}-\u{25FE}\u{25A0}-\u{25A1}\u{25B2}-\u{25B3}\u{25BC}-\u{25BD}\u{25C6}-\u{25C7}\u{25CB}-\u{25CB}\u{25CF}-\u{25CF}\u{25D0}-\u{25D1}\u{25E2}-\u{25E5}\u{25EF}-\u{25EF}]/gu, '');
+                // Reemplazar todas las variantes de WIN por "win" para la voz
+                cleanText = cleanText.replace(/WIN( \(se pronuncia 'win'\))?/gi, 'win');
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function showToast(message) {
+            const existingToasts = document.querySelectorAll('.toast');
+            existingToasts.forEach(toast => document.body.removeChild(toast));
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            
+            document.body.appendChild(toast);
+            
+            void toast.offsetWidth;
+            toast.style.opacity = '1';
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 2000);
+        }
+
+        // Event Listeners para los botones de voz
+        function setupVoiceEventListeners() {
+            const voiceButtonHeader = document.getElementById('voiceButtonHeader');
+            const voiceButtonMain = document.getElementById('voiceButtonMain');
+            
+            // Bot锟斤拷n del header
+            if (voiceButtonHeader) {
+                voiceButtonHeader.addEventListener('mousedown', startRecording);
+                voiceButtonHeader.addEventListener('mouseup', stopRecording);
+                voiceButtonHeader.addEventListener('mouseleave', stopRecording);
+                
+                // Touch events para m锟斤拷viles
+                voiceButtonHeader.addEventListener('touchstart', startRecording);
+                voiceButtonHeader.addEventListener('touchend', stopRecording);
+            }
+            
+            // Bot锟斤拷n principal
+            if (voiceButtonMain) {
+                voiceButtonMain.addEventListener('mousedown', startRecording);
+                voiceButtonMain.addEventListener('mouseup', stopRecording);
+                voiceButtonMain.addEventListener('mouseleave', stopRecording);
+                
+                // Touch events para m锟斤拷viles
+                voiceButtonMain.addEventListener('touchstart', startRecording);
+                voiceButtonMain.addEventListener('touchend', stopRecording);
+            }
+        }
+
+        // Touch events para el carrusel
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+        let isSwiping = false;
+        
+        function handleTouchStart(event) {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+            isSwiping = true;
+        }
+        
+        function handleTouchMove(event) {
+            if (!isSwiping) return;
+            
+            touchEndX = event.touches[0].clientX;
+            touchEndY = event.touches[0].clientY;
+            
+            const xDiff = touchStartX - touchEndX;
+            const yDiff = touchStartY - touchEndY;
+            
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                event.preventDefault();
+            }
+        }
+        
+        function handleTouchEnd(event) {
+            if (!isSwiping) return;
+            
+            const xDiff = touchStartX - touchEndX;
+            const yDiff = touchStartY - touchEndY;
+            
+            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 30) {
+                if (xDiff > 0) {
+                    nextImage();
+                } else {
+                    prevImage();
+                }
+            }
+            
+            isSwiping = false;
+        }
+        
+        function checkOrientation() {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            document.body.classList.toggle('landscape', isLandscape);
+            
+            const carouselContainer = document.querySelector('.carousel-container');
+            if (carouselContainer) {
+                if (isLandscape && window.innerHeight < 500) {
+                    carouselContainer.style.height = 'calc(100vh - var(--header-height) - 40px)';
+                } else {
+                    carouselContainer.style.height = 'calc(100vh - var(--header-height) - 80px)';
+                }
+            }
+        }
+        
+        // Inicializaci锟斤拷n
+window.onload = async function() {
+    // Cargar contexto WIN primero
+    await loadWinContext();
+    // Resto del c贸digo existente
+    loadImages();
+    checkOrientation();
+    // Verificar soporte del navegador
+    const browserSupport = checkBrowserSupport();
+    if (browserSupport.mediaRecorder && browserSupport.getUserMedia) {
+        updateVoiceStatus('馃帳 Haz clic en el bot贸n para permitir el micr贸fono');
+        setupVoiceEventListeners();
+    } else {
+        document.querySelector('.voice-chat-section').style.display = 'none';
+        document.getElementById('voiceButtonHeader').style.display = 'none';
+    }
+    // Touch events para el carrusel
+    const carouselContainer = document.querySelector('.carousel-container');
+    if (carouselContainer) {
+        carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+        carouselContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+};
+
+// Event listeners para cambios de tama?o de ventana
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', function() {
+    setTimeout(checkOrientation, 100);
+});
+
+// Pausar autoplay cuando la pesta?a no est锟斤拷 visible
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopAutoplay();
+    } else {
+        if (images.length > 1) {
+            startAutoplay();
+        }
+    }
+});
+
+// Manejar teclas del teclado para navegaci锟斤拷n del carrusel
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'ArrowLeft') {
+        prevImage();
+    } else if (event.key === 'ArrowRight') {
+        nextImage();
+    } else if (event.key === ' ') {
+        event.preventDefault();
+        if (images.length > 1) {
+            if (autoplayInterval) {
+                stopAutoplay();
+            } else {
+                startAutoplay();
+            }
+        }
+    }
+});
+
+        // Funci锟斤拷n para manejar errores de carga de im锟斤拷genes
+function handleImageError(img, index) {
+    console.warn(`Error loading image ${index}: ${img.src}`);
+    img.style.display = 'none';
+}
+
+// Funci锟斤拷n para precargar im锟斤拷genes
+function preloadImages() {
+    images.forEach((src, index) => {
+        const img = new Image();
+        img.onload = function() {
+            console.log(`Image ${index + 1} loaded successfully`);
+        };
+        img.onerror = function() {
+            console.warn(`Failed to preload image ${index + 1}: ${src}`);
+        };
+        img.src = src;
+    });
+}
+
+// Funci锟斤拷n para verificar la conexi锟斤拷n del micr锟斤拷fono
+async function checkMicrophonePermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (error) {
+        console.error('Microphone permission error:', error);
+        return false;
+    }
+}
+
+// Funci锟斤拷n para manejar errores de la API de Gemini
+function handleGeminiError(error) {
+    console.error('Gemini API Error:', error);
+    
+    let errorMessage = 'Error al procesar la nota de voz';
+    
+    if (error.message.includes('API key')) {
+        errorMessage = 'Error de configuraci贸n de API';
+    } else if (error.message.includes('quota')) {
+        errorMessage = 'L铆mite de uso alcanzado, intenta m谩s tarde';
+    } else if (error.message.includes('network')) {
+        errorMessage = 'Error de conexi贸n, verifica tu internet';
+    }
+    updateVoiceStatus('鉂?' + errorMessage);
+    showToast(errorMessage);
+}
+
+// Funci锟斤拷n para limpiar recursos cuando sea necesario
+function cleanup() {
+    stopAutoplay();
+    
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+}
+
+// Limpiar recursos antes de cerrar la p锟斤拷gina
+window.addEventListener('beforeunload', cleanup);
+
+// Funci锟斤拷n para verificar si el navegador soporta las funcionalidades necesarias
+function checkBrowserSupport() {
+    const features = {
+        mediaRecorder: typeof MediaRecorder !== 'undefined',
+        getUserMedia: navigator.mediaDevices && navigator.mediaDevices.getUserMedia,
+        speechSynthesis: 'speechSynthesis' in window,
+        fetch: typeof fetch !== 'undefined'
+    };
+    
+    console.log('Browser support:', features);
+    
+    if (!features.mediaRecorder || !features.getUserMedia) {
+        showToast('Tu navegador no soporta grabaci贸n de audio');
+        document.querySelectorAll('.voice-button-header, .voice-button_main').forEach(btn => {
+            btn.style.display = 'none';
+        });
+    }
+    
+    return features;
+}
+
+// Verificar soporte del navegador al cargar
+checkBrowserSupport();
+    </script>
+</body>
+</html>
