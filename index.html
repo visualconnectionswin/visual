@@ -505,9 +505,9 @@
             </div>
             <div class="voice-chat-section">
                 <div class="voice-chat-container">
-                    <h3 class="voice-chat-title">💬 Asistente de Voz WIN</h3>
+                    <h3 class="voice-chat-title">🤖 Asistente de Voz WIN</h3>
                     <div class="instructions" style="background: #f0f8ff; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--primary-color);">
-                        <p><strong>📋 Instrucciones:</strong></p>
+                        <p><strong>🎤 Instrucciones:</strong></p>
                         <ul style="margin: 10px 0; padding-left: 20px;">
                             <li>Al usar por primera vez, tu navegador pedirá permisos para el micrófono</li>
                             <li>Haz clic en "Permitir" para habilitar la función de voz</li>
@@ -551,7 +551,55 @@
         // IMPORTANTE: Reemplaza con tu API Key de Gemini
         const GEMINI_API_KEY = "AIzaSyA1iBEtUGezNR-0g_evqmSTaTVzrRS-8iw";
         
-        // Cargar imágenes del carrusel
+        // Variable global para almacenar el contexto
+let winContext = null;
+
+// Función para cargar el contexto WIN
+async function loadWinContext() {
+    try {
+        const response = await fetch('./contexto-win.json');
+        winContext = await response.json();
+        console.log('Contexto WIN cargado exitosamente');
+    } catch (error) {
+        console.error('Error loading WIN context:', error);
+        winContext = null;
+    }
+}
+
+// Función para crear el prompt con contexto
+function createContextualPrompt(userMessage = "") {
+    if (!winContext) {
+        return "Responde de manera amigable sobre WIN, empresa de telecomunicaciones peruana.";
+    }
+
+    const prompt = `
+Eres ${winContext.identidad.nombre}, un asistente virtual de ${winContext.identidad.empresa}.
+
+INFORMACIÓN DE LA EMPRESA:
+- Empresa: WIN (${winContext.informacion_empresa.fundacion})
+- Servicios: ${winContext.informacion_empresa.servicios.join(', ')}
+- Eslogan: \"${winContext.informacion_empresa.eslogan}\"
+- Tecnología: ${winContext.informacion_empresa.tecnologia}
+
+INSTRUCCIONES:
+${winContext.instrucciones_ia.comportamiento.map(inst => `- ${inst}`).join('\n')}
+
+INFORMACIÓN PARA RESPONDER:
+${JSON.stringify(winContext.preguntas_frecuentes, null, 2)}
+
+REGLAS DE FACTURACIÓN (si preguntan sobre fechas de pago/facturación):
+${JSON.stringify(winContext.facturacion, null, 2)}
+
+Responde de manera amigable y profesional. Si te preguntan sobre facturación, usa este formato:
+${winContext.instrucciones_ia.formato_respuesta_facturacion}
+
+El usuario pregunta: "${userMessage}"
+Responde basándote ÚNICAMENTE en la información proporcionada.`;
+
+    return prompt;
+}
+
+// Cargar im��genes del carrusel
         async function loadImages() {
             try {
                 document.getElementById('carousel-container').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -575,11 +623,11 @@
                     
                     initCarousel();
                 } else {
-                    document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar las imágenes</p>';
+                    document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar las im��genes</p>';
                 }
             } catch(error) {
                 console.error('Error loading images:', error);
-                document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">Error al cargar las imágenes: ' + error.message + '</p>';
+                document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">Error al cargar las im��genes: ' + error.message + '</p>';
             }
         }
         
@@ -751,7 +799,7 @@
             errorContainer.className = 'error-notification';
             errorContainer.innerHTML = `
                 <div class="error-content">
-                    <h4>⚠️ ${message}</h4>
+                    <h4>🚫 ${message}</h4>
                     <p>${instructions}</p>
                     <button onclick="this.parentElement.parentElement.remove()">Entendido</button>
                 </div>
@@ -760,7 +808,7 @@
         }
         
         async function handleFirstVoiceInteraction() {
-            updateVoiceStatus('🔄 Solicitando permisos del micrófono...');
+            updateVoiceStatus('🎤 Solicitando permisos del micrófono...');
             const success = await requestMicrophonePermission();
             if (success) {
                 updateVoiceStatus('✅ ¡Listo! Mantén presionado para hablar');
@@ -771,7 +819,6 @@
                 return false;
             }
         }
-        
         async function startRecording() {
             if (isRecording) return;
             // Si es la primera vez, solicitar permisos
@@ -784,7 +831,7 @@
                 mediaRecorder.start();
                 isRecording = true;
                 updateVoiceButtons(true);
-                updateVoiceStatus('🔴 Grabando... (mantén presionado)');
+                updateVoiceStatus('🎙️ Grabando... (mantén presionado)');
                 hideVoiceResponse();
             } catch (error) {
                 console.error('Error starting recording:', error);
@@ -792,29 +839,24 @@
                 showToast('Error al iniciar la grabación');
             }
         }
-
         function stopRecording() {
             if (!isRecording || !mediaRecorder) return;
-            
             mediaRecorder.stop();
             isRecording = false;
-            
             // Actualizar UI
             updateVoiceButtons(false);
-            updateVoiceStatus('🔄 Procesando tu mensaje...');
+            updateVoiceStatus('⏳ Procesando tu mensaje...');
         }
-
         function updateVoiceButtons(recording) {
             const buttons = [
                 document.getElementById('voiceButtonHeader'),
                 document.getElementById('voiceButtonMain')
             ];
-            
             buttons.forEach(button => {
                 if (button) {
                     if (recording) {
                         button.classList.add('recording');
-                        button.innerHTML = '🔴';
+                        button.innerHTML = '🎙️';
                     } else {
                         button.classList.remove('recording');
                         button.innerHTML = '🎤';
@@ -822,14 +864,12 @@
                 }
             });
         }
-
         function updateVoiceStatus(message) {
             const statusElement = document.getElementById('voiceStatus');
             if (statusElement) {
                 statusElement.textContent = message;
             }
         }
-
         function showVoiceResponse(text) {
             const responseElement = document.getElementById('voiceResponse');
             const responseTextElement = document.getElementById('responseText');
@@ -839,20 +879,19 @@
                 responseElement.classList.add('show');
             }
         }
-
         function hideVoiceResponse() {
             const responseElement = document.getElementById('voiceResponse');
             if (responseElement) {
                 responseElement.classList.remove('show');
             }
         }
-
         async function processVoiceMessage(audioBlob) {
             try {
                 // Convertir audio a base64
                 const base64Audio = await blobToBase64(audioBlob);
-                
-                // Enviar a Gemini API
+                // Crear el prompt con contexto
+                const contextualPrompt = createContextualPrompt();
+                // Enviar a Gemini API con contexto
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: {
@@ -861,14 +900,18 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: "Transcribe este audio y responde de manera amigable. Si preguntan sobre WIN, menciona que es una empresa de telecomunicaciones peruana que ofrece internet fibra óptica, telefonía y TV digital desde 2017."
+                                text: contextualPrompt
                             }, {
                                 inline_data: {
                                     mime_type: "audio/webm",
                                     data: base64Audio.split(',')[1]
                                 }
                             }]
-                        }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 500
+                        }
                     })
                 });
 
@@ -879,10 +922,10 @@
                     showVoiceResponse(responseText);
                     updateVoiceStatus('✅ ¡Listo! Presiona de nuevo para otra pregunta');
                     
-                    // Opcional: Reproducir respuesta con síntesis de voz
+                    // Opcional: Reproducir respuesta con s��ntesis de voz
                     speakResponse(responseText);
                 } else {
-                    throw new Error('No se recibió respuesta válida');
+                    throw new Error('No se recibi�� respuesta v��lida');
                 }
                 
             } catch (error) {
@@ -938,24 +981,24 @@
             const voiceButtonHeader = document.getElementById('voiceButtonHeader');
             const voiceButtonMain = document.getElementById('voiceButtonMain');
             
-            // Botón del header
+            // Bot��n del header
             if (voiceButtonHeader) {
                 voiceButtonHeader.addEventListener('mousedown', startRecording);
                 voiceButtonHeader.addEventListener('mouseup', stopRecording);
                 voiceButtonHeader.addEventListener('mouseleave', stopRecording);
                 
-                // Touch events para móviles
+                // Touch events para m��viles
                 voiceButtonHeader.addEventListener('touchstart', startRecording);
                 voiceButtonHeader.addEventListener('touchend', stopRecording);
             }
             
-            // Botón principal
+            // Bot��n principal
             if (voiceButtonMain) {
                 voiceButtonMain.addEventListener('mousedown', startRecording);
                 voiceButtonMain.addEventListener('mouseup', stopRecording);
                 voiceButtonMain.addEventListener('mouseleave', stopRecording);
                 
-                // Touch events para móviles
+                // Touch events para m��viles
                 voiceButtonMain.addEventListener('touchstart', startRecording);
                 voiceButtonMain.addEventListener('touchend', stopRecording);
             }
@@ -1019,8 +1062,11 @@
             }
         }
         
-        // Inicialización
+        // Inicializaci��n
 window.onload = async function() {
+    // Cargar contexto WIN primero
+    await loadWinContext();
+    // Resto del código existente
     loadImages();
     checkOrientation();
     // Verificar soporte del navegador
@@ -1041,13 +1087,13 @@ window.onload = async function() {
     }
 };
 
-// Event listeners para cambios de tamaño de ventana
+// Event listeners para cambios de tama?o de ventana
 window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', function() {
     setTimeout(checkOrientation, 100);
 });
 
-// Pausar autoplay cuando la pestaña no está visible
+// Pausar autoplay cuando la pesta?a no est�� visible
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
         stopAutoplay();
@@ -1058,7 +1104,7 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
-// Manejar teclas del teclado para navegación del carrusel
+// Manejar teclas del teclado para navegaci��n del carrusel
 document.addEventListener('keydown', function(event) {
     if (event.key === 'ArrowLeft') {
         prevImage();
@@ -1076,13 +1122,13 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Función para manejar errores de carga de imágenes
+// Funci��n para manejar errores de carga de im��genes
 function handleImageError(img, index) {
     console.warn(`Error loading image ${index}: ${img.src}`);
     img.style.display = 'none';
 }
 
-// Función para precargar imágenes
+// Funci��n para precargar im��genes
 function preloadImages() {
     images.forEach((src, index) => {
         const img = new Image();
@@ -1096,7 +1142,7 @@ function preloadImages() {
     });
 }
 
-// Función para verificar la conexión del micrófono
+// Funci��n para verificar la conexi��n del micr��fono
 async function checkMicrophonePermission() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1108,7 +1154,7 @@ async function checkMicrophonePermission() {
     }
 }
 
-// Función para manejar errores de la API de Gemini
+// Funci��n para manejar errores de la API de Gemini
 function handleGeminiError(error) {
     console.error('Gemini API Error:', error);
     
@@ -1121,12 +1167,11 @@ function handleGeminiError(error) {
     } else if (error.message.includes('network')) {
         errorMessage = 'Error de conexión, verifica tu internet';
     }
-    
     updateVoiceStatus('❌ ' + errorMessage);
     showToast(errorMessage);
 }
 
-// Función para limpiar recursos cuando sea necesario
+// Funci��n para limpiar recursos cuando sea necesario
 function cleanup() {
     stopAutoplay();
     
@@ -1139,10 +1184,10 @@ function cleanup() {
     }
 }
 
-// Limpiar recursos antes de cerrar la página
+// Limpiar recursos antes de cerrar la p��gina
 window.addEventListener('beforeunload', cleanup);
 
-// Función para verificar si el navegador soporta las funcionalidades necesarias
+// Funci��n para verificar si el navegador soporta las funcionalidades necesarias
 function checkBrowserSupport() {
     const features = {
         mediaRecorder: typeof MediaRecorder !== 'undefined',
