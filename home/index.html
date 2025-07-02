@@ -856,7 +856,7 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
                 if (button) {
                     if (recording) {
                         button.classList.add('recording');
-                        button.innerHTML = '馃帣锔?;
+                        button.innerHTML = '馃帣锔?';
                     } else {
                         button.classList.remove('recording');
                         button.innerHTML = '馃帳';
@@ -1203,7 +1203,7 @@ function checkBrowserSupport() {
     console.log('Browser support:', features);
     
     if (!features.mediaRecorder || !features.getUserMedia) {
-        showToast('Tu navegador no soporta grabaci贸n de audio');
+        showToast('Tu navegador no soporta grabaci\u00f3n de audio');
         document.querySelectorAll('.voice-button-header, .voice-button_main').forEach(btn => {
             btn.style.display = 'none';
         });
@@ -1212,8 +1212,68 @@ function checkBrowserSupport() {
     return features;
 }
 
-// Verificar soporte del navegador al cargar
-checkBrowserSupport();
+// --- PUENTE PARA KOTLIN ---
+// Añade esta función completa a tu archivo index.html dentro de la etiqueta <script>
+async function processAudioFromNative(base64AudioDataUri) {
+    // 1. Muestra que se está procesando en la UI de la página web
+    updateVoiceStatus('⏳ Procesando tu mensaje...');
+    hideVoiceResponse(); // Oculta la respuesta anterior
+
+    try {
+        // 2. Extrae los datos base64 del data URI que envía Kotlin
+        const base64Audio = base64AudioDataUri.split(',')[1];
+        if (!base64Audio) {
+            throw new Error("El audio recibido de la app nativa está vacío.");
+        }
+        
+        // 3. Obtiene el prompt y la API Key (reutiliza la lógica existente)
+        const contextualPrompt = createContextualPrompt();
+        const apiKey = GEMINI_API_KEY;
+
+        // 4. Llama a la API de Gemini
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: contextualPrompt
+                    }, {
+                        // Importante: el mime_type debe coincidir con el formato de grabación de Android (3gp)
+                        inline_data: {
+                            mime_type: "audio/3gp", 
+                            data: base64Audio
+                        }
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.3,
+                    maxOutputTokens: 500
+                }
+            })
+        });
+
+        const result = await response.json();
+        
+        // 5. Muestra la respuesta en la UI de la página web
+        if (result.candidates && result.candidates[0] && result.candidates[0].content.parts[0].text) {
+            const responseText = result.candidates[0].content.parts[0].text;
+            showVoiceResponse(responseText);
+            updateVoiceStatus('✅ ¡Listo! Mantén presionado de nuevo para otra pregunta');
+            speakResponse(responseText); // Opcional: lee la respuesta en voz alta
+        } else {
+            const errorInfo = result.error ? result.error.message : 'No se recibió respuesta válida de la IA.';
+            throw new Error(errorInfo);
+        }
+
+    } catch (error) {
+        console.error('Error procesando el mensaje de voz nativo:', error);
+        updateVoiceStatus(`❌ Error: ${error.message}`);
+        showToast('Error al procesar la nota de voz');
+    }
+}
     </script>
 </body>
 </html>
