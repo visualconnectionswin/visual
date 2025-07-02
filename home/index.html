@@ -554,7 +554,7 @@
         // Variable global para almacenar el contexto
 let winContext = null;
 
-// Funci贸n para cargar el contexto WIN
+// Función para cargar el contexto WIN
 async function loadWinContext() {
     try {
         const response = await fetch('./contexto-win.json');
@@ -566,7 +566,7 @@ async function loadWinContext() {
     }
 }
 
-// Funci贸n para crear el prompt con contexto
+// Función para crear el prompt con contexto
 function createContextualPrompt(userMessage = "") {
     if (!winContext) {
         return "Responde de manera amigable sobre WIN, empresa de telecomunicaciones peruana.";
@@ -575,31 +575,31 @@ function createContextualPrompt(userMessage = "") {
     const prompt = `
 Eres ${winContext.identidad.nombre}, un asistente virtual de ${winContext.identidad.empresa}.
 
-INFORMACI脫N DE LA EMPRESA:
+INFORMACIÓN DE LA EMPRESA:
 - Empresa: WIN (se pronuncia 'win') (${winContext.informacion_empresa.fundacion})
 - Servicios: ${winContext.informacion_empresa.servicios.join(', ')}
 - Eslogan: "${winContext.informacion_empresa.eslogan}"
-- Tecnolog铆a: ${winContext.informacion_empresa.tecnologia}
+- Tecnología: ${winContext.informacion_empresa.tecnologia}
 
 INSTRUCCIONES:
 ${winContext.instrucciones_ia.comportamiento.map(inst => `- ${inst}`).join('\n')}
 
-INFORMACI脫N PARA RESPONDER:
+INFORMACIÓN PARA RESPONDER:
 ${JSON.stringify(winContext.preguntas_frecuentes, null, 2)}
 
-REGLAS DE FACTURACI脫N (si preguntan sobre fechas de pago/facturaci贸n):
+REGLAS DE FACTURACIÓN (si preguntan sobre fechas de pago/facturación):
 ${JSON.stringify(winContext.facturacion, null, 2)}
 
-Responde de manera amigable y profesional. Si te preguntan sobre facturaci贸n, usa este formato:
+Responde de manera amigable y profesional. Si te preguntan sobre facturación, usa este formato:
 ${winContext.instrucciones_ia.formato_respuesta_facturacion}
 
 El usuario pregunta: "${userMessage}"
-Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
+Responde basándote ÚNICAMENTE en la información proporcionada.`;
 
     return prompt;
 }
 
-// Cargar im锟斤拷genes del carrusel
+// Cargar imágenes del carrusel
         async function loadImages() {
             try {
                 document.getElementById('carousel-container').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -623,11 +623,11 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
                     
                     initCarousel();
                 } else {
-                    document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar las im锟斤拷genes</p>';
+                    document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar las imágenes</p>';
                 }
             } catch(error) {
                 console.error('Error loading images:', error);
-                document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">Error al cargar las im锟斤拷genes: ' + error.message + '</p>';
+                document.getElementById('carousel-container').innerHTML = '<p style="text-align: center; padding: 20px;">Error al cargar las imágenes: ' + error.message + '</p>';
             }
         }
         
@@ -750,7 +750,7 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
         // Funcionalidad de Voz
         async function requestMicrophonePermission() {
             try {
-                // Solicitar acceso al micr贸fono SIEMPRE al presionar el bot贸n
+                // Solicitar acceso al micrófono SIEMPRE al presionar el botón
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
                         echoCancellation: true,
@@ -758,7 +758,7 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
                         autoGainControl: true
                     }
                 });
-                // Inicializar MediaRecorder con mejor configuraci贸n
+                // Inicializar MediaRecorder con mejor configuración
                 mediaRecorder = new MediaRecorder(stream, {
                     mimeType: 'audio/webm;codecs=opus'
                 });
@@ -779,17 +779,17 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
             let message = '';
             let instructions = '';
             if (error.name === 'NotAllowedError' || error.message === 'PERMISSION_DENIED') {
-                message = 'Permisos de micr贸fono denegados';
-                instructions = 'Ve a configuraci贸n del navegador y permite el acceso al micr贸fono para este sitio';
+                message = 'Permisos de micrófono denegados';
+                instructions = 'Ve a configuración del navegador y permite el acceso al micrófono para este sitio';
             } else if (error.name === 'NotFoundError') {
-                message = 'No se encontr贸 micr贸fono';
-                instructions = 'Conecta un micr贸fono y recarga la p谩gina';
+                message = 'No se encontró micrófono';
+                instructions = 'Conecta un micrófono y recarga la página';
             } else if (error.name === 'NotReadableError') {
-                message = 'Micr贸fono en uso por otra aplicaci贸n';
-                instructions = 'Cierra otras aplicaciones que usen el micr贸fono';
+                message = 'Micrófono en uso por otra aplicación';
+                instructions = 'Cierra otras aplicaciones que usen el micrófono';
             } else {
-                message = 'Error de acceso al micr贸fono';
-                instructions = 'Verifica que tu micr贸fono funcione correctamente';
+                message = 'Error de acceso al micrófono';
+                instructions = 'Verifica que tu micrófono funcione correctamente';
             }
             showDetailedError(message, instructions);
             return false;
@@ -799,7 +799,7 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
             errorContainer.className = 'error-notification';
             errorContainer.innerHTML = `
                 <div class="error-content">
-                    <h4>馃毇 ${message}</h4>
+                    <h4> ${message}</h4>
                     <p>${instructions}</p>
                     <button onclick="this.parentElement.parentElement.remove()">Entendido</button>
                 </div>
@@ -808,14 +808,14 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
         }
         
         async function handleFirstVoiceInteraction() {
-            updateVoiceStatus('馃帳 Solicitando permisos del micr贸fono...');
+            updateVoiceStatus('Solicitando permisos del micrófono...');
             const success = await requestMicrophonePermission();
             if (success) {
-                updateVoiceStatus('鉁?隆Listo! Mant茅n presionado para hablar');
-                showToast('Permisos concedidos. Ya puedes usar la funci贸n de voz');
+                updateVoiceStatus('Listo! Mantén presionado para hablar');
+                showToast('Permisos concedidos. Ya puedes usar la función de voz');
                 return true;
             } else {
-                updateVoiceStatus('鉂?No se pudo acceder al micr贸fono');
+                updateVoiceStatus('No se pudo acceder al micrófono');
                 return false;
             }
         }
@@ -831,12 +831,12 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
                 mediaRecorder.start();
                 isRecording = true;
                 updateVoiceButtons(true);
-                updateVoiceStatus('馃帣锔?Grabando... (mant茅n presionado)');
+                updateVoiceStatus('Grabando... (mantén presionado)');
                 hideVoiceResponse();
             } catch (error) {
                 console.error('Error starting recording:', error);
-                updateVoiceStatus('鉂?Error al iniciar grabaci贸n');
-                showToast('Error al iniciar la grabaci贸n');
+                updateVoiceStatus('Error al iniciar grabación');
+                showToast('Error al iniciar la grabación');
             }
         }
         function stopRecording() {
@@ -845,7 +845,7 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
             isRecording = false;
             // Actualizar UI
             updateVoiceButtons(false);
-            updateVoiceStatus('鈴?Procesando tu mensaje...');
+            updateVoiceStatus('Procesando tu mensaje...');
         }
         function updateVoiceButtons(recording) {
             const buttons = [
@@ -856,10 +856,10 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
                 if (button) {
                     if (recording) {
                         button.classList.add('recording');
-                        button.innerHTML = '馃帣锔?';
+                        button.innerHTML = '🎤';
                     } else {
                         button.classList.remove('recording');
-                        button.innerHTML = '馃帳';
+                        button.innerHTML = '🎤';
                     }
                 }
             });
@@ -920,17 +920,17 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
                 if (result.candidates && result.candidates[0]) {
                     const responseText = result.candidates[0].content.parts[0].text;
                     showVoiceResponse(responseText);
-                    updateVoiceStatus('鉁?隆Listo! Presiona de nuevo para otra pregunta');
+                    updateVoiceStatus('Listo! Presiona de nuevo para otra pregunta');
                     
-                    // Opcional: Reproducir respuesta con s锟斤拷ntesis de voz
+                    // Opcional: Reproducir respuesta con síntesis de voz
                     speakResponse(responseText);
                 } else {
-                    throw new Error('No se recibi锟斤拷 respuesta v锟斤拷lida');
+                    throw new Error('No se recibió respuesta válida');
                 }
                 
             } catch (error) {
                 console.error('Error processing voice message:', error);
-                updateVoiceStatus('鉂?Error al procesar el mensaje');
+                updateVoiceStatus('Error al procesar el mensaje');
                 showToast('Error al procesar la nota de voz');
             }
         }
@@ -985,24 +985,24 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
             const voiceButtonHeader = document.getElementById('voiceButtonHeader');
             const voiceButtonMain = document.getElementById('voiceButtonMain');
             
-            // Bot锟斤拷n del header
+            // Botón del header
             if (voiceButtonHeader) {
                 voiceButtonHeader.addEventListener('mousedown', startRecording);
                 voiceButtonHeader.addEventListener('mouseup', stopRecording);
                 voiceButtonHeader.addEventListener('mouseleave', stopRecording);
                 
-                // Touch events para m锟斤拷viles
+                // Touch events para móviles
                 voiceButtonHeader.addEventListener('touchstart', startRecording);
                 voiceButtonHeader.addEventListener('touchend', stopRecording);
             }
             
-            // Bot锟斤拷n principal
+            // Botón principal
             if (voiceButtonMain) {
                 voiceButtonMain.addEventListener('mousedown', startRecording);
                 voiceButtonMain.addEventListener('mouseup', stopRecording);
                 voiceButtonMain.addEventListener('mouseleave', stopRecording);
                 
-                // Touch events para m锟斤拷viles
+                // Touch events para móviles
                 voiceButtonMain.addEventListener('touchstart', startRecording);
                 voiceButtonMain.addEventListener('touchend', stopRecording);
             }
@@ -1066,17 +1066,17 @@ Responde bas谩ndote 脷NICAMENTE en la informaci贸n proporcionada.`;
             }
         }
         
-        // Inicializaci锟斤拷n
+        // Inicialización
 window.onload = async function() {
     // Cargar contexto WIN primero
     await loadWinContext();
-    // Resto del c贸digo existente
+    // Resto del código existente
     loadImages();
     checkOrientation();
     // Verificar soporte del navegador
     const browserSupport = checkBrowserSupport();
     if (browserSupport.mediaRecorder && browserSupport.getUserMedia) {
-        updateVoiceStatus('馃帳 Haz clic en el bot贸n para permitir el micr贸fono');
+        updateVoiceStatus('Haz clic en el botón para permitir el micrófono');
         setupVoiceEventListeners();
     } else {
         document.querySelector('.voice-chat-section').style.display = 'none';
@@ -1091,7 +1091,7 @@ window.onload = async function() {
     }
 };
 
-// Event listeners para cambios de tama?o de ventana
+// Event listeners para cambios de tamaño de ventana
 window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', function() {
     setTimeout(checkOrientation, 100);
@@ -1167,11 +1167,11 @@ function handleGeminiError(error) {
     if (error.message.includes('API key')) {
         errorMessage = 'Error de configuraci贸n de API';
     } else if (error.message.includes('quota')) {
-        errorMessage = 'L铆mite de uso alcanzado, intenta m谩s tarde';
+        errorMessage = 'Límite de uso alcanzado, intenta más tarde';
     } else if (error.message.includes('network')) {
         errorMessage = 'Error de conexi贸n, verifica tu internet';
     }
-    updateVoiceStatus('鉂?' + errorMessage);
+    updateVoiceStatus('Error: ' + errorMessage);
     showToast(errorMessage);
 }
 
@@ -1261,7 +1261,7 @@ async function processAudioFromNative(base64AudioDataUri) {
         if (result.candidates && result.candidates[0] && result.candidates[0].content.parts[0].text) {
             const responseText = result.candidates[0].content.parts[0].text;
             showVoiceResponse(responseText);
-            updateVoiceStatus('✅ ¡Listo! Mantén presionado de nuevo para otra pregunta');
+            updateVoiceStatus('Listo! Mantén presionado de nuevo para otra pregunta');
             speakResponse(responseText); // Opcional: lee la respuesta en voz alta
         } else {
             const errorInfo = result.error ? result.error.message : 'No se recibió respuesta válida de la IA.';
@@ -1270,7 +1270,7 @@ async function processAudioFromNative(base64AudioDataUri) {
 
     } catch (error) {
         console.error('Error procesando el mensaje de voz nativo:', error);
-        updateVoiceStatus(`❌ Error: ${error.message}`);
+        updateVoiceStatus(`Error: ${error.message}`);
         showToast('Error al procesar la nota de voz');
     }
 }
