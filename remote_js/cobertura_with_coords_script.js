@@ -375,49 +375,29 @@
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
-        const VENDOR_NAME = "ZORIANYS MILAGROS LEAL";
-
+        
         function handleSimulationClick() {
             nativeLog("Inicia simulación");
             const btn = document.getElementById(SIMULATION_BUTTON_ID);
             if (btn) btn.disabled = true;
-
+        
             try {
-                const ide = document.querySelector('#ide_cli');
-                if (!ide.value) {
-                    nativeLog("No hay ID cliente, haciendo click en nuevoCliente");
-                    const nuevoClienteBtn = document.querySelector('#nuevoCliente');
-                    if (nuevoClienteBtn) nuevoClienteBtn.click();
-
-                    setTimeout(() => {
-                        const cliTel = document.querySelector('#cli_tel1');
-                        const cliEmail = document.querySelector('#cli_email');
-
-                        if (cliTel) {
-                            cliTel.value = '999999999';
-                            cliTel.dispatchEvent(new Event('change', { bubbles: true }));
-                            nativeLog("Teléfono completado");
-                        }
-
-                        if (cliEmail) {
-                            cliEmail.value = 'demopruebadanna@gmail.com';
-                            cliEmail.dispatchEvent(new Event('change', { bubbles: true }));
-                            nativeLog("Email completado");
-                        }
-
-                        setTimeout(() => {
-                            const addCustomerBtn = document.querySelector('#add_customer_data');
-                            if (addCustomerBtn) {
-                                addCustomerBtn.click();
-                                nativeLog("Click en agregar cliente");
-                            }
-                        }, 100);
-                    }, 300);
-                } else {
-                    nativeLog("ID cliente ya existe: " + ide.value);
+                // Teléfono y correo directamente (ya no es necesario abrir modal)
+                const cliTel = document.querySelector('#cli_tel1');
+                const cliEmail = document.querySelector('#cli_email');
+        
+                if (cliTel) {
+                    cliTel.value = '999999999';
+                    cliTel.dispatchEvent(new Event('change', { bubbles: true }));
+                    nativeLog("Teléfono completado");
                 }
-
-                // Este setTimeout se ejecuta después del bloque if/else de ide.value
+        
+                if (cliEmail) {
+                    cliEmail.value = 'demopruebadanna@gmail.com';
+                    cliEmail.dispatchEvent(new Event('change', { bubbles: true }));
+                    nativeLog("Email completado");
+                }
+        
                 setTimeout(() => {
                     const checkTratamiento = document.querySelector('#checkTratamientoDatos');
                     if (checkTratamiento && !checkTratamiento.checked) {
@@ -425,86 +405,71 @@
                         checkTratamiento.dispatchEvent(new Event('change', { bubbles: true }));
                         nativeLog("Check tratamiento datos activado");
                     }
-
+        
                     const tipoServicio = document.querySelector('#tipo_servicio');
                     if (tipoServicio) {
                         tipoServicio.value = '1';
                         tipoServicio.dispatchEvent(new Event('change', { bubbles: true }));
-                        nativeLog("Tipo servicio seleccionado");
+                        nativeLog("Tipo servicio seleccionado: Hogar");
                     }
-
+        
                     const relacionPredio = document.querySelector('#relacionPredio');
                     if (relacionPredio) {
                         relacionPredio.value = '2';
                         relacionPredio.dispatchEvent(new Event('change', { bubbles: true }));
-                        nativeLog("Relación predio seleccionada");
+                        nativeLog("Relación predio seleccionada: Inquilino");
                     }
-
+        
                     const tipoInteres = document.querySelector('#tipoInteres');
                     if (tipoInteres) {
                         const options = Array.from(tipoInteres.options);
-                        const ventaOption = options.find(o => o.textContent.trim() === 'Venta');
+                        const ventaOption = options.find(o => o.textContent.trim().toLowerCase() === 'venta');
                         if (ventaOption) {
                             tipoInteres.value = ventaOption.value;
                             tipoInteres.dispatchEvent(new Event('change', { bubbles: true }));
                             nativeLog("Tipo interés seleccionado: Venta");
-                        } else {
-                            nativeLog("WARN: Opción 'Venta' no encontrada en #tipoInteres");
                         }
-                    } else {
-                        nativeLog("WARN: Elemento #tipoInteres no encontrado");
                     }
-
+        
                     const agencia = document.querySelector('#agencia');
                     if (agencia) {
-                        const options = Array.from(agencia.options);
-                        const agenciaOption = options.find(o => o.textContent.trim() === VENDOR_NAME);
-                        if (agenciaOption) {
-                            agencia.value = agenciaOption.value;
+                        const firstOption = agencia.options[1];
+                        if (firstOption) {
+                            agencia.value = firstOption.value;
                             agencia.dispatchEvent(new Event('change', { bubbles: true }));
-                            nativeLog("Agencia seleccionada: " + VENDOR_NAME);
-                        } else {
-                            nativeLog("WARN: Opción de agencia '" + VENDOR_NAME + "' no encontrada en #agencia");
+                            nativeLog("Primer vendedor seleccionado: " + firstOption.textContent);
                         }
-                    } else {
-                        nativeLog("WARN: Elemento #agencia no encontrado");
                     }
-
+        
                     setTimeout(() => {
                         const registerSearch = document.querySelector('#register_search');
                         if (registerSearch) {
                             registerSearch.click();
                             nativeLog("Click en register_search");
-
+        
                             setTimeout(() => {
                                 const swalConfirm = document.querySelector('button.swal2-confirm.swal2-styled');
                                 if (swalConfirm) {
                                     swalConfirm.click();
                                     nativeLog("Click automático en Ok confirmación");
-                                } else {
-                                    nativeLog("WARN: Botón de confirmación Swal no encontrado");
                                 }
-
+        
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
-                            }, 1000); // Espera para el Swal
-                        } else {
-                            nativeLog("WARN: Botón #register_search no encontrado");
-                            const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
-                            if (btnAfter) btnAfter.disabled = false; // Habilitar si register_search no se encuentra
+                            }, 1000);
                         }
-                    }, 500); // Espera para register_search
-                }, 1000); // Espera para completar campos después de creación de cliente o si ya existía
-
+                    }, 500);
+                }, 300);
+        
             } catch (e) {
-                nativeLog("ERROR en simulación: " + e.message + (e.stack ? " Stack: " + e.stack : ""));
-                alert("Error en simulación, revisa consola nativa para detalles.");
+                nativeLog("ERROR en simulación: " + e.message);
+                alert("Error en simulación, revisa consola");
                 const btn2 = document.getElementById(SIMULATION_BUTTON_ID);
                 if (btn2) btn2.disabled = false;
             }
         }
-
+        
         function createSimulationButton() {
             if (document.getElementById(SIMULATION_BUTTON_ID)) return;
             const b = document.createElement('button');
@@ -514,14 +479,10 @@
             b.style.margin = '10px 0';
             b.addEventListener('click', handleSimulationClick);
             const c = document.querySelector(SCORE_CONTAINER_SELECTOR);
-            if (c) {
-                c.parentNode.insertBefore(b, c.nextSibling);
-                nativeLog("Botón de simulación creado");
-            } else {
-                nativeLog("WARN: Contenedor de score no encontrado para insertar botón de simulación.");
-            }
+            if (c) c.parentNode.insertBefore(b, c.nextSibling);
+            nativeLog("Botón de simulación creado");
         }
-
+        
         function removeSimulationButton() {
             const b = document.getElementById(SIMULATION_BUTTON_ID);
             if (b) {
@@ -529,7 +490,7 @@
                 nativeLog("Botón de simulación eliminado");
             }
         }
-
+        
         function checkScoreAndToggleButton() {
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
@@ -538,50 +499,36 @@
                     createSimulationButton();
                     nativeLog("Score válido detectado: " + t.match(/Score:\s*(\d+)/)?.[1]);
                     return;
-                } else {
-                    nativeLog("Score no válido o no visible: " + t);
                 }
-            } else {
-                nativeLog("Elemento score_customer_div no encontrado o no visible.");
             }
             removeSimulationButton();
         }
-
-        nativeLog('Iniciando monitoreo CON COORDENADAS para botón de simulación...');
-        // Intentar encontrar el elemento score_customer_div inmediatamente
-        const scoreDisplayInitial = document.querySelector(SCORE_DISPLAY_SELECTOR);
-        if (scoreDisplayInitial) {
+        
+        nativeLog('Iniciando monitoreo para botón de simulación...');
+        const scoreDisplay = document.querySelector(SCORE_DISPLAY_SELECTOR);
+        if (scoreDisplay) {
             nativeLog('Elemento score encontrado, configurando observer');
-            new MutationObserver(checkScoreAndToggleButton).observe(scoreDisplayInitial, {
+            new MutationObserver(checkScoreAndToggleButton).observe(scoreDisplay, {
                 childList: true,
                 subtree: true,
                 characterData: true
             });
-            checkScoreAndToggleButton(); // Chequeo inicial
+            checkScoreAndToggleButton();
         } else {
-            nativeLog('Elemento score no encontrado inicialmente, programando chequeo periódico...');
-            let attempts = 0;
-            const maxAttempts = 20; // Intentar por 10 segundos (20 * 500ms)
+            nativeLog('Elemento score no encontrado, programando chequeo periódico');
             const scoreCheckInterval = setInterval(() => {
                 const scoreElement = document.querySelector(SCORE_DISPLAY_SELECTOR);
                 if (scoreElement) {
                     clearInterval(scoreCheckInterval);
-                    nativeLog('Elemento score encontrado posteriormente, configurando observer.');
+                    nativeLog('Elemento score encontrado posteriormente');
                     new MutationObserver(checkScoreAndToggleButton).observe(scoreElement, {
                         childList: true,
                         subtree: true,
                         characterData: true
                     });
-                    checkScoreAndToggleButton(); // Chequeo inicial una vez encontrado
-                } else {
-                    attempts++;
-                    nativeLog('Intento ' + attempts + ' de ' + maxAttempts + ' para encontrar ' + SCORE_DISPLAY_SELECTOR);
-                    if (attempts >= maxAttempts) {
-                        clearInterval(scoreCheckInterval);
-                        nativeLog('WARN: No se pudo encontrar ' + SCORE_DISPLAY_SELECTOR + ' después de ' + maxAttempts + ' intentos.');
-                    }
+                    checkScoreAndToggleButton();
                 }
-            }, 500); // Chequear cada 500ms
+            }, 1000);
         }
         // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
 
