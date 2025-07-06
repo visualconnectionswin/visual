@@ -330,48 +330,29 @@
         const SIMULATION_BUTTON_ID = 'realizar-simulacion-btn';
         const SCORE_DISPLAY_SELECTOR = '#score_customer_div';
         const SCORE_CONTAINER_SELECTOR = '#score_customer_div';
-        const VENDOR_NAME = "ZORIANYS MILAGROS LEAL";
-
+        
         function handleSimulationClick() {
             nativeLog("Inicia simulación");
             const btn = document.getElementById(SIMULATION_BUTTON_ID);
             if (btn) btn.disabled = true;
-
+        
             try {
-                const ide = document.querySelector('#ide_cli');
-                if (!ide.value) {
-                    nativeLog("No hay ID cliente, haciendo click en nuevoCliente");
-                    const nuevoClienteBtn = document.querySelector('#nuevoCliente');
-                    if (nuevoClienteBtn) nuevoClienteBtn.click();
-
-                    setTimeout(() => {
-                        const cliTel = document.querySelector('#cli_tel1');
-                        const cliEmail = document.querySelector('#cli_email');
-
-                        if (cliTel) {
-                            cliTel.value = '999999999';
-                            cliTel.dispatchEvent(new Event('change', { bubbles: true }));
-                            nativeLog("Teléfono completado");
-                        }
-
-                        if (cliEmail) {
-                            cliEmail.value = 'demopruebadanna@gmail.com';
-                            cliEmail.dispatchEvent(new Event('change', { bubbles: true }));
-                            nativeLog("Email completado");
-                        }
-
-                        setTimeout(() => {
-                            const addCustomerBtn = document.querySelector('#add_customer_data');
-                            if (addCustomerBtn) {
-                                addCustomerBtn.click();
-                                nativeLog("Click en agregar cliente");
-                            }
-                        }, 100);
-                    }, 300);
-                } else {
-                    nativeLog("ID cliente ya existe: " + ide.value);
+                // Teléfono y correo directamente (ya no es necesario abrir modal)
+                const cliTel = document.querySelector('#cli_tel1');
+                const cliEmail = document.querySelector('#cli_email');
+        
+                if (cliTel) {
+                    cliTel.value = '999999999';
+                    cliTel.dispatchEvent(new Event('change', { bubbles: true }));
+                    nativeLog("Teléfono completado");
                 }
-
+        
+                if (cliEmail) {
+                    cliEmail.value = 'demopruebadanna@gmail.com';
+                    cliEmail.dispatchEvent(new Event('change', { bubbles: true }));
+                    nativeLog("Email completado");
+                }
+        
                 setTimeout(() => {
                     const checkTratamiento = document.querySelector('#checkTratamientoDatos');
                     if (checkTratamiento && !checkTratamiento.checked) {
@@ -379,64 +360,63 @@
                         checkTratamiento.dispatchEvent(new Event('change', { bubbles: true }));
                         nativeLog("Check tratamiento datos activado");
                     }
-
+        
                     const tipoServicio = document.querySelector('#tipo_servicio');
                     if (tipoServicio) {
                         tipoServicio.value = '1';
                         tipoServicio.dispatchEvent(new Event('change', { bubbles: true }));
-                        nativeLog("Tipo servicio seleccionado");
+                        nativeLog("Tipo servicio seleccionado: Hogar");
                     }
-
+        
                     const relacionPredio = document.querySelector('#relacionPredio');
                     if (relacionPredio) {
                         relacionPredio.value = '2';
                         relacionPredio.dispatchEvent(new Event('change', { bubbles: true }));
-                        nativeLog("Relación predio seleccionada");
+                        nativeLog("Relación predio seleccionada: Inquilino");
                     }
-
+        
                     const tipoInteres = document.querySelector('#tipoInteres');
                     if (tipoInteres) {
                         const options = Array.from(tipoInteres.options);
-                        const ventaOption = options.find(o => o.textContent.trim() === 'Venta');
+                        const ventaOption = options.find(o => o.textContent.trim().toLowerCase() === 'venta');
                         if (ventaOption) {
                             tipoInteres.value = ventaOption.value;
                             tipoInteres.dispatchEvent(new Event('change', { bubbles: true }));
                             nativeLog("Tipo interés seleccionado: Venta");
                         }
                     }
-
+        
                     const agencia = document.querySelector('#agencia');
                     if (agencia) {
-                        const options = Array.from(agencia.options);
-                        const agenciaOption = options.find(o => o.textContent.trim() === VENDOR_NAME);
-                        if (agenciaOption) {
-                            agencia.value = agenciaOption.value;
+                        const firstOption = agencia.options[1];
+                        if (firstOption) {
+                            agencia.value = firstOption.value;
                             agencia.dispatchEvent(new Event('change', { bubbles: true }));
-                            nativeLog("Agencia seleccionada: " + VENDOR_NAME);
+                            nativeLog("Primer vendedor seleccionado: " + firstOption.textContent);
                         }
                     }
-
+        
                     setTimeout(() => {
                         const registerSearch = document.querySelector('#register_search');
                         if (registerSearch) {
                             registerSearch.click();
                             nativeLog("Click en register_search");
-
+        
                             setTimeout(() => {
                                 const swalConfirm = document.querySelector('button.swal2-confirm.swal2-styled');
                                 if (swalConfirm) {
                                     swalConfirm.click();
                                     nativeLog("Click automático en Ok confirmación");
                                 }
-
+        
                                 const btnAfter = document.getElementById(SIMULATION_BUTTON_ID);
                                 if (btnAfter) btnAfter.disabled = false;
                                 nativeLog("Simulación completa");
                             }, 1000);
                         }
                     }, 500);
-                }, 1000);
-
+                }, 300);
+        
             } catch (e) {
                 nativeLog("ERROR en simulación: " + e.message);
                 alert("Error en simulación, revisa consola");
@@ -444,7 +424,7 @@
                 if (btn2) btn2.disabled = false;
             }
         }
-
+        
         function createSimulationButton() {
             if (document.getElementById(SIMULATION_BUTTON_ID)) return;
             const b = document.createElement('button');
@@ -457,7 +437,7 @@
             if (c) c.parentNode.insertBefore(b, c.nextSibling);
             nativeLog("Botón de simulación creado");
         }
-
+        
         function removeSimulationButton() {
             const b = document.getElementById(SIMULATION_BUTTON_ID);
             if (b) {
@@ -465,7 +445,7 @@
                 nativeLog("Botón de simulación eliminado");
             }
         }
-
+        
         function checkScoreAndToggleButton() {
             const d = document.querySelector(SCORE_DISPLAY_SELECTOR);
             if (d && window.getComputedStyle(d).display !== 'none') {
@@ -478,7 +458,7 @@
             }
             removeSimulationButton();
         }
-
+        
         nativeLog('Iniciando monitoreo para botón de simulación...');
         const scoreDisplay = document.querySelector(SCORE_DISPLAY_SELECTOR);
         if (scoreDisplay) {
@@ -506,6 +486,7 @@
             }, 1000);
         }
         // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
+
 
         // Asegúrate de que el DOM esté completamente cargado antes de ejecutar el script.
         $(document).ready(function() {
