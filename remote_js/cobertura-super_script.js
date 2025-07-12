@@ -2,13 +2,17 @@
     // Usar el log nativo para depurar el JS desde Android Studio
     function nativeLog(message) {
         try {
-            window.AndroidInterface.log('Cobertura JS: ' + message);
+            window.AndroidInterface.log('Cobertura JS (Coords): ' + message);
         } catch (e) {
-            console.log('Fallback Console (Cobertura JS): ' + message);
+            console.log('Fallback Console (Coords): ' + message);
         }
     }
 
-    nativeLog('Iniciando ejecución...');
+    // Inyecta los valores de Kotlin
+    const kotlinCoords = "%KOTLIN_COORDS_PLACEHOLDER%";
+    const kotlinTimestamp = %KOTLIN_TIMESTAMP_PLACEHOLDER%;
+
+    nativeLog('Iniciando ejecución CON COORDENADAS: ' + kotlinCoords + ', timestamp: ' + kotlinTimestamp);
 
     // === INICIO: DATOS DE POLÍGONOS ZONA F ===
     var ZONA_F_POLYGONS_DATA = [
@@ -56,7 +60,7 @@
             [-12.0356446, -76.9675253],[-12.036909, -76.9669808],[-12.0367463, -76.9665919],[-12.0353665, -76.9671712],[-12.0356446, -76.9675253]],
         [ // Polígono 21
             [-11.9311765, -77.0819181],[-11.9314009, -77.0817437],[-11.9316016, -77.0815319],[-11.9307514, -77.0804831],[-11.9297752, -77.0812985],[-11.9311765, -77.0819181]],
-        [ // Polígono 22 (Corregido posible typo en la última coordenada si era para cerrar el polígono)
+        [ // Polígono 22
             [-11.9892681, -77.0007624],[-11.9898768, -76.9993864],[-11.9896171, -76.9991236],[-11.9895121, -76.9992201],[-11.9893311, -76.9994535],[-11.988872, -77.0006041],[-11.9892681, -77.0007624]],
         [ // Polígono 23
             [-12.0255958, -77.0135206],[-12.0259001, -77.013483],[-12.0257218, -77.0118308],[-12.0252915, -77.0118737],[-12.0253781, -77.0128581],[-12.0253938, -77.0130512],[-12.0255958, -77.0135206]],
@@ -70,15 +74,23 @@
     // === FIN: DATOS DE POLÍGONOS ZONA F ===
 
     // === INICIO: FUNCIONES PARA COMPROBAR ZONA F ===
+    /**
+     * Verifica si un punto está dentro de un polígono usando el algoritmo de ray casting.
+     * @param {Array<number>} point - Un array [lat, lon] para el punto.
+     * @param {Array<Array<number>>} polygon - Un array de vertices [[lat, lon], [lat, lon], ...].
+     * @returns {boolean} - True si el punto está dentro del polígono, false en caso contrario.
+     */
     function isPointInPolygon(point, polygon) {
-        const lat = point[0];
-        const lon = point[1];
+        const lat = point[0]; // y
+        const lon = point[1]; // x
         let inside = false;
+
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const lat_i = polygon[i][0];
-            const lon_i = polygon[i][1];
-            const lat_j = polygon[j][0];
-            const lon_j = polygon[j][1];
+            const lat_i = polygon[i][0]; // yi
+            const lon_i = polygon[i][1]; // xi
+            const lat_j = polygon[j][0]; // yj
+            const lon_j = polygon[j][1]; // xj
+
             const intersect = ((lat_i > lat) !== (lat_j > lat)) &&
                 (lon < (lon_j - lon_i) * (lat - lat_i) / (lat_j - lat_i) + lon_i);
             if (intersect) {
@@ -88,14 +100,20 @@
         return inside;
     }
 
+    /**
+     * Comprueba el estado de un punto (lat, lon) contra ZONA_F_POLYGONS_DATA.
+     * @param {number} lat - Latitud del punto.
+     * @param {number} lon - Longitud del punto.
+     * @returns {string} - "DENTRO" si está en zona F, "FUERA" si no.
+     */
     function checkZonaFStatus(lat, lon) {
         const point = [lat, lon];
         for (const polygon of ZONA_F_POLYGONS_DATA) {
             if (isPointInPolygon(point, polygon)) {
-                return "DENTRO";
+                return "DENTRO"; // El punto está dentro de al menos un polígono de Zona F
             }
         }
-        return "FUERA";
+        return "FUERA"; // El punto no está en ningún polígono de Zona F
     }
     // === FIN: FUNCIONES PARA COMPROBAR ZONA F ===
 
@@ -110,14 +128,15 @@
         }
     }, 500);
 
-    // Dar tiempo a que el modal o la sección aparezca
+    // Dar tiempo a que el modal o la sección aparezca después del clic
     setTimeout(function() {
-        nativeLog('Ejecutando lógica principal después del delay...');
+        nativeLog('Ejecutando lógica principal CON COORDENADAS después del delay...');
 
         // === INICIO: Insertar campo combinado "Lat, Lon" y llenarlo ===
         try {
             const lonElem = document.querySelector('#gf_lon');
             if (lonElem) {
+                // Solo crear si no existe ya
                 let combinedInput = document.querySelector('#gf_latlon');
                 if (!combinedInput) {
                     combinedInput = document.createElement('input');
@@ -137,6 +156,7 @@
                             const lon = parts[1].trim();
                             const latElem = document.querySelector('#gf_lat');
                             const lonElem2 = document.querySelector('#gf_lon');
+
                             if (latElem) latElem.value = lat;
                             if (lonElem2) lonElem2.value = lon;
                             nativeLog('Parsed lat: ' + lat + ' lon: ' + lon + ' desde gf_latlon');
@@ -144,6 +164,46 @@
                     });
                 } else {
                     nativeLog('Campo combinado gf_latlon ya existe.');
+                }
+
+                // Llenar el campo combinado con las coordenadas de Kotlin
+                combinedInput.value = kotlinCoords;
+                nativeLog('Valor de gf_latlon establecido a: ' + kotlinCoords);
+
+                // Disparar evento input si hay valor
+                if (kotlinCoords !== "" && kotlinCoords !== "0,0" && kotlinCoords !== "0.0,0.0") { // Evitar disparar para coords vacías o (0,0)
+                    const inputEvent = new Event('input', { bubbles: true });
+                    combinedInput.dispatchEvent(inputEvent);
+                    nativeLog('Evento input disparado para gf_latlon.');
+                }
+
+                // Llenar también los campos #gf_lat y #gf_lon si existen
+                if (kotlinCoords !== "" && kotlinCoords !== "0,0" && kotlinCoords !== "0.0,0.0") {
+                    const parts = kotlinCoords.split(/[,;]+/);
+                    if (parts.length >= 2) {
+                        const lat = parts[0].trim();
+                        const lon = parts[1].trim();
+                        const latElem = document.querySelector('#gf_lat');
+                        const lonElem2 = document.querySelector('#gf_lon');
+
+                        if (latElem) {
+                            latElem.value = lat;
+                            latElem.dispatchEvent(new Event('input', { bubbles: true }));
+                            latElem.dispatchEvent(new Event('change', { bubbles: true }));
+                            nativeLog('Inyectado valor lat: ' + lat + ' en campo #gf_lat');
+                        } else {
+                            nativeLog('WARN: No se encontró elemento #gf_lat para inyectar valor');
+                        }
+
+                        if (lonElem2) {
+                            lonElem2.value = lon;
+                            lonElem2.dispatchEvent(new Event('input', { bubbles: true }));
+                            lonElem2.dispatchEvent(new Event('change', { bubbles: true }));
+                            nativeLog('Inyectado valor lon: ' + lon + ' en campo #gf_lon');
+                        } else {
+                            nativeLog('WARN: No se encontró elemento #gf_lon para inyectar valor');
+                        }
+                    }
                 }
             } else {
                 nativeLog('WARN: No se encontró el elemento #gf_lon para insertar/llenar gf_latlon.');
@@ -153,7 +213,7 @@
         }
         // === FIN: Insertar campo combinado ===
 
-        // 2. Eliminar elementos estáticos no deseados
+        // 2. Eliminar elementos estáticos no deseados (si aún es necesario)
         const selectoresAEliminar = [
             '#kt_modal_create_account > div > div > div.modal-header',
             '#kt_header',
@@ -203,14 +263,8 @@
 
             if (!coords) {
                 if (container) {
-                    nativeLog('Sin coordenadas válidas, eliminando botones y status.');
+                    nativeLog('Sin coordenadas válidas en inputs, eliminando botones y status.');
                     container.remove();
-                }
-                // Eliminar el overlay rojo si existe
-                var existingOverlay = document.getElementById('zona-f-background-overlay');
-                if (existingOverlay) {
-                    existingOverlay.remove();
-                    nativeLog('Overlay rojo eliminado (sin coordenadas válidas).');
                 }
                 return;
             }
@@ -219,8 +273,18 @@
                 nativeLog('Creando contenedor de botones y status Zona F.');
                 container = document.createElement('div');
                 container.id = 'contenedorBotonesNativos';
-                container.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 10px; padding: 5px; border: 1px dashed #ccc; border-radius: 4px;';
+                container.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-top: 15px;
+                    margin-bottom: 10px;
+                    padding: 5px;
+                    border: 1px dashed #ccc;
+                    border-radius: 4px;
+                `;
 
+                // === INICIO: Crear Indicador Zona F ===
                 zonaFIndicator = document.createElement('span');
                 zonaFIndicator.id = 'zonaFStatusIndicatorNativo';
                 zonaFIndicator.style.cssText = `
@@ -230,16 +294,26 @@
                     border-radius: 5px; 
                     font-size: 13px; 
                     flex-shrink: 0;
-                    /* El color de fondo se establecerá dinámicamente */
+                    background-color: #808080; /* Gris por defecto */
                 `;
-                // El texto y color se establecerán más abajo, después de checkZonaFStatus
-                container.appendChild(zonaFIndicator);
+                zonaFIndicator.textContent = 'Comprobando Zona F';
+                container.appendChild(zonaFIndicator); // Añadirlo primero para que esté a la izquierda
+                // === FIN: Crear Indicador Zona F ===
 
                 const botonCopiar = document.createElement('button');
                 botonCopiar.id = 'botonCopiarCoordenadasNativo';
                 botonCopiar.textContent = 'Copiar Coordenadas';
                 botonCopiar.type = 'button';
-                botonCopiar.style.cssText = 'padding: 8px 12px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; flex-shrink: 0;';
+                botonCopiar.style.cssText = `
+                    padding: 8px 12px;
+                    background-color: #007bff;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    flex-shrink: 0;
+                `;
                 botonCopiar.addEventListener('click', function() {
                     const c = obtenerCoordenadas();
                     if (c) {
@@ -270,60 +344,31 @@
                 }
             }
 
-            // Actualizar indicador Zona F y fondo del body
-            // Asegurarse de que tenemos el indicador, especialmente si el contenedor ya existía
-            if (!zonaFIndicator) {
+            // === INICIO: Actualizar Indicador Zona F (siempre que haya coords y el indicador exista) ===
+            if (!zonaFIndicator) { // Asegurarse de tener la referencia
                  zonaFIndicator = document.getElementById('zonaFStatusIndicatorNativo');
             }
-            
+
             if (zonaFIndicator) {
+                zonaFIndicator.textContent = 'Comprobando Zona F';
+                zonaFIndicator.style.backgroundColor = '#808080'; // Gris
+                zonaFIndicator.style.color = '#ffffff';
+
                 const statusZonaF = checkZonaFStatus(coords.lat, coords.lng);
                 nativeLog(`Check Zona F: Lat ${coords.lat}, Lng ${coords.lng} -> ${statusZonaF}`);
 
-                // Eliminar cualquier overlay existente primero
-                var existingOverlay = document.getElementById('zona-f-background-overlay');
-                if (existingOverlay) {
-                    existingOverlay.remove();
-                    nativeLog('Overlay anterior eliminado para actualización');
-                }
-
                 if (statusZonaF === "DENTRO") {
                     zonaFIndicator.textContent = 'Dentro de Zona F';
-                    zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo para el indicador
-                    zonaFIndicator.style.color = '#ffffff';
-                    
-                    // Crear un overlay rojo que cubra toda la página
-                    var redOverlay = document.createElement('div');
-                    redOverlay.id = 'zona-f-background-overlay';
-                    redOverlay.style.cssText = `
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        width: 100vw;
-                        height: 100vh;
-                        background-color: rgba(255, 0, 0, 0.15);
-                        pointer-events: none;
-                        z-index: 9999;
-                    `;
-                    document.body.appendChild(redOverlay);
-                    nativeLog('Nuevo overlay rojo aplicado con posición fixed, z-index alto, y dimensiones vw/vh');
-                    
-                } else if (statusZonaF === "FUERA") {
+                    zonaFIndicator.style.backgroundColor = '#dc3545'; // Rojo
+                } else { // FUERA
                     zonaFIndicator.textContent = 'Fuera de Zona F';
-                    zonaFIndicator.style.backgroundColor = '#28a745'; // Verde para el indicador
-                    zonaFIndicator.style.color = '#ffffff';
-                    nativeLog('Indicador verde establecido (FUERA de Zona F)');
-                    
-                } else { // Caso por defecto o "Comprobando" si checkZonaFStatus devolviera algo más
-                    zonaFIndicator.textContent = 'Comprobando Zona F';
-                    zonaFIndicator.style.backgroundColor = '#808080'; // Gris
-                    zonaFIndicator.style.color = '#ffffff';
-                    nativeLog('Indicador gris establecido (Comprobando Zona F)');
+                    zonaFIndicator.style.backgroundColor = '#28a745'; // Verde
                 }
             }
+            // === FIN: Actualizar Indicador Zona F ===
         }
 
-        nativeLog('Iniciando monitorización de coordenadas/estado...');
+        nativeLog('Iniciando monitorización CON COORDENADAS de coordenadas/estado...');
         setInterval(gestionarBotones, 500);
 
         // === INICIO: NUEVA FUNCIONALIDAD - MONITOREO PARA BOTÓN "REALIZAR SIMULACIÓN" ===
@@ -487,59 +532,137 @@
         }
         // === FIN: NUEVA FUNCIONALIDAD - BOTÓN "REALIZAR SIMULACIÓN" ===
 
+        // Listener para auto-selección de tipo de documento
+        const inputDoc = document.querySelector('#documento_identidad'); // Renombrado para evitar conflicto con 'input' global si existiera
+        const selectDoc = document.querySelector('#tipo_doc'); // Renombrado para evitar conflicto con 'select' global si existiera
+        if (inputDoc && selectDoc) {
+            nativeLog('Configurando listener para auto-selección de tipo de documento.');
+            inputDoc.addEventListener('input', () => {
+                inputDoc.value = inputDoc.value.replace(/\s+/g, '');
+                inputDoc.value = inputDoc.value.replace(/[^0-9]/g, ''); // Corregido: [^0-9] para solo números
+                const length = inputDoc.value.length;
+                let eventDispatched = false;
+                if (length === 8) {
+                    if (selectDoc.value !== '1') {
+                        selectDoc.value = '1'; // DNI
+                        selectDoc.dispatchEvent(new Event('change', { bubbles: true }));
+                        nativeLog('Tipo Documento cambiado a DNI (1) por longitud 8.');
+                        eventDispatched = true;
+                    }
+                } else if (length === 9) {
+                    if (selectDoc.value !== '3') {
+                        selectDoc.value = '3'; // CE
+                        selectDoc.dispatchEvent(new Event('change', { bubbles: true }));
+                        nativeLog('Tipo Documento cambiado a CE (3) por longitud 9.');
+                        eventDispatched = true;
+                    }
+                } else if (length === 11) {
+                    if (selectDoc.value !== '6') {
+                        selectDoc.value = '6'; // RUC
+                        selectDoc.dispatchEvent(new Event('change', { bubbles: true }));
+                        nativeLog('Tipo Documento cambiado a RUC (6) por longitud 11.');
+                        eventDispatched = true;
+                    }
+                }
+                if (length > 11) {
+                    inputDoc.value = inputDoc.value.slice(0, 11);
+                    nativeLog('Longitud de documento recortada a 11.');
+                }
+            });
+        } else {
+            nativeLog('WARN: No se encontraron #documento_identidad o #tipo_doc para auto-selección.');
+        }
 
         // Asegúrate de que el DOM esté completamente cargado antes de ejecutar el script.
         $(document).ready(function() {
+        // --- PASO 1: Ocultar visualmente el paso final y su contenido ---
+        // Esto se ejecuta una vez para limpiar la interfaz.
 
-            // --- PASO 1: Ocultar visualmente el paso final y su contenido ---
-            // Esto se ejecuta una vez para limpiar la interfaz.
-            
-            // Oculta el paso "Confirmar venta" en la barra de navegación del stepper.
-            $('#page_content_3').hide();
-            
-            // Oculta el contenido de la página 3 para que nunca sea visible.
-            $('.page_3').hide();
+        // Oculta el paso "Confirmar venta" en la barra de navegación del stepper.
+        $('#page_content_3').hide();
+
+        // Oculta el contenido de la página 3 para que nunca sea visible.
+        $('.page_3').hide();
 
 
-            // --- PASO 2: Crear una función para gestionar el estado del botón "Continuar" ---
-            function gestionarEstadoBotonContinuar() {
-                // Comprueba si la página activa actual es la página 2 ("Selección de oferta").
-                // La clase "current" indica la página activa.
-                if ($('.page_2').hasClass('current')) {
-                    // Si estamos en la página 2, deshabilitamos y ocultamos el botón "Continuar".
-                    $('#continuar').prop('disabled', true).hide();
-                } else {
-                    // Si estamos en cualquier otra página (0 o 1), nos aseguramos de que el botón esté habilitado y visible.
-                    $('#continuar').prop('disabled', false).show();
-                }
+        // --- PASO 2: Crear una función para gestionar el estado del botón "Continuar" ---
+        function gestionarEstadoBotonContinuar() {
+            // Comprueba si la página activa actual es la página 2 ("Selección de oferta").
+            // La clase "current" indica la página activa.
+            if ($('.page_2').hasClass('current')) {
+                // Si estamos en la página 2, deshabilitamos y ocultamos el botón "Continuar".
+                $('#continuar').prop('disabled', true).hide();
+            } else {
+                // Si estamos en cualquier otra página (0 o 1), nos aseguramos de que el botón esté habilitado y visible.
+                $('#continuar').prop('disabled', false).show();
             }
+        }
 
 
-            // --- PASO 3: Ejecutar la función en los momentos correctos ---
-            
-            // Al hacer clic en el botón "Continuar"
-            $('#continuar').on('click', function() {
-                // El framework del stepper necesita un instante para actualizar las clases.
-                // Usamos un pequeño retardo (setTimeout) para comprobar el estado DESPUÉS de que se haya movido a la siguiente página.
-                setTimeout(function() {
-                    gestionarEstadoBotonContinuar();
-                }, 100); // 100 milisegundos es suficiente.
-            });
+        // --- PASO 3: Ejecutar la función en los momentos correctos ---
 
-            // Al hacer clic en el botón "Anterior"
-            $('#anterior').on('click', function() {
-                // Hacemos lo mismo para asegurarnos de que el botón "Continuar" se reactive si el usuario retrocede desde la página 2.
-                setTimeout(function() {
-                    gestionarEstadoBotonContinuar();
-                }, 100);
-            });
-            
-            // Ejecutamos la función una vez al cargar por si acaso el modal se abre en un estado intermedio (aunque normalmente empieza en la página 0).
-            gestionarEstadoBotonContinuar();
-
+        // Al hacer clic en el botón "Continuar"
+        $('#continuar').on('click', function() {
+            // El framework del stepper necesita un instante para actualizar las clases.
+            // Usamos un pequeño retardo (setTimeout) para comprobar el estado DESPUÉS de que se haya movido a la siguiente página.
+            setTimeout(function() {
+                gestionarEstadoBotonContinuar();
+            }, 100); // 100 milisegundos es suficiente.
         });
 
-    }, 1000);
+        // Al hacer clic en el botón "Anterior"
+        $('#anterior').on('click', function() {
+            // Hacemos lo mismo para asegurarnos de que el botón "Continuar" se reactive si el usuario retrocede desde la página 2.
+            setTimeout(function() {
+                gestionarEstadoBotonContinuar();
+            }, 100);
+        });
 
-    nativeLog('Script inyectado y ejecución iniciada.');
+        // Ejecutamos la función una vez al cargar por si acaso el modal se abre en un estado intermedio (aunque normalmente empieza en la página 0).
+        gestionarEstadoBotonContinuar();
+        });
+
+    }, 1000); // Fin del setTimeout de la lógica principal
+
+    // Secuencia de clicks adicionales (originalmente en tu jsWithCoords)
+    setTimeout(function() {
+        nativeLog('Iniciando secuencia de clicks adicionales (Coords)...');
+
+        function waitForElement(selector, callback, maxAttempts = 20, interval = 500) {
+            let attempts = 0;
+
+            function tryFind() {
+                const element = document.querySelector(selector);
+                // Asegurarse que el elemento está visible y en el DOM
+                if (element && element.offsetParent !== null && window.getComputedStyle(element).display !== 'none' && window.getComputedStyle(element).visibility !== 'hidden') {
+                    nativeLog('Elemento encontrado y visible: ' + selector);
+                    callback(element);
+                } else {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        nativeLog('Esperando por elemento: ' + selector + ' (intento ' + attempts + ')');
+                        setTimeout(tryFind, interval);
+                    } else {
+                        nativeLog('ERROR: Elemento no encontrado o no visible después de ' + maxAttempts + ' intentos: ' + selector);
+                    }
+                }
+            }
+            tryFind();
+        }
+        waitForElement('img[src*="geolocalizacion_icon.png"]', function(geoIcon) {
+            nativeLog('Clickeando en ícono de geolocalización');
+            geoIcon.click();
+            waitForElement('input.gf_btnPopup[value="Confirmar"]', function(confirmButton) {
+                nativeLog('Clickeando en botón Confirmar');
+                confirmButton.click();
+                waitForElement('#continuar', function(continuarButton) {
+                    nativeLog('Clickeando en botón Continuar');
+                    continuarButton.click();
+                    nativeLog('Secuencia de clicks (coords) completada exitosamente');
+                });
+            });
+        });
+    }, 1500); // Este timeout se ejecuta después del principal para no interferir
+
+    nativeLog('Script CON COORDENADAS inyectado y ejecución iniciada.');
 })();
