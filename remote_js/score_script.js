@@ -3,10 +3,25 @@
     const input = document.querySelector('#documento_identidad');
     const select = document.querySelector('#tipo_doc');
     if (input && select) {
+        // FORZAR: Remover cualquier limitación de maxlength del HTML
+        input.removeAttribute('maxlength');
+        input.setAttribute('maxlength', '11');
+        
         input.addEventListener('input', () => {
-            input.value = input.value.replace(/\s+/g, '');
-            input.value = input.value.replace(/[^0-9]/g, '');
-            const length = input.value.length;
+            // FORZAR: Limpiar y permitir solo números
+            let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+            
+            // FORZAR: Permitir exactamente hasta 11 caracteres
+            if (valor.length > 11) {
+                valor = valor.slice(0, 11);
+            }
+            
+            // FORZAR: Asignar el valor limpio
+            input.value = valor;
+            
+            const length = valor.length;
+            
+            // FORZAR: Auto-selección de tipo de documento
             if (length === 8) {
                 select.value = '1';
                 select.dispatchEvent(new Event('change'));
@@ -17,9 +32,29 @@
                 select.value = '6';
                 select.dispatchEvent(new Event('change'));
             }
-            if (length > 11) {
-                input.value = input.value.slice(0, 11);
-            }
+        });
+        
+        // FORZAR: También manejar eventos de pegado
+        input.addEventListener('paste', (e) => {
+            setTimeout(() => {
+                let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+                if (valor.length > 11) {
+                    valor = valor.slice(0, 11);
+                }
+                input.value = valor;
+                
+                const length = valor.length;
+                if (length === 8) {
+                    select.value = '1';
+                    select.dispatchEvent(new Event('change'));
+                } else if (length === 9) {
+                    select.value = '3';
+                    select.dispatchEvent(new Event('change'));
+                } else if (length === 11) {
+                    select.value = '6';
+                    select.dispatchEvent(new Event('change'));
+                }
+            }, 10);
         });
         // NUEVO: disparar búsqueda al presionar Enter
         input.addEventListener('keydown', (e) => {
@@ -31,6 +66,19 @@
             }
         });
     }
+
+    // Observador para ocultar #info-cliente-general en cuanto aparezca
+    const ocultarInfoGeneral = () => {
+        const infoDiv = document.querySelector('#info-cliente-general');
+        if (infoDiv && infoDiv.style.display !== 'none') {
+            infoDiv.style.display = 'none';
+        }
+    };
+    const observer = new MutationObserver(() => {
+        ocultarInfoGeneral();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    ocultarInfoGeneral();
 
     return new Promise((resolve, reject) => {
         function waitForElement(selector) {
@@ -104,6 +152,12 @@
         }
 
         function eliminarElementos() {
+            // Solo ocultar la info general, no eliminar
+            const infoDiv = document.querySelector('#info-cliente-general');
+            if (infoDiv) {
+                infoDiv.style.display = 'none';
+            }
+
             // Mejora: eliminar los nuevos bloques de checkboxes
             const tratamientoDiv = document.querySelector('input#checkTratamientoDatos')?.closest('div.col-md-12');
             if (tratamientoDiv) {
@@ -146,7 +200,6 @@
 
             // Bloque para eliminar elementos solicitados explícitamente que requieren lógica de traversal.
             try {
-                document.querySelector('#info-cliente-general')?.remove();
                 document.querySelector('select#tipo_servicio')?.closest('.row.g-9')?.remove();
                 document.querySelectorAll('select#relacionPredio').forEach(el => el.closest('.row.g-9.mb-8')?.remove());
                 document.querySelector('textarea#observaciones')?.closest('.col-md-12.fv-row')?.remove();
@@ -223,23 +276,61 @@
             }
         }
 
+        function waitForScoreValido() {
+            return new Promise((resolve) => {
+                const interval = setInterval(() => {
+                    const scoreDiv = document.querySelector('#score_customer_div');
+                    const scoreSpan = document.querySelector('#score_customer_div #estamos_verificando');
+                    if (scoreDiv && scoreSpan) {
+                        const scoreText = scoreSpan.textContent.trim();
+                        // Considera válido si empieza con 'Score:' y tiene un rango
+                        const esScoreValido = /^Score:\s*\d+\s*-\s*\d+/.test(scoreText);
+                        if (esScoreValido) {
+                            clearInterval(interval);
+                            resolve(scoreText);
+                        }
+                    }
+                }, 200);
+            });
+        }
+
         // Enviar el documento al hacer clic en el botón
         const searchBtn = document.querySelector('#search_score_cliente');
         if (searchBtn) {
-            searchBtn.addEventListener('click', () => {
-                const valorDocumento = document.querySelector('#documento_identidad')?.value || '';
-                if (valorDocumento.trim().length > 0) {
-                    // Aquí se utiliza la URL y la configuración del fetch que indicaste que te funciona
-                    fetch('https://script.google.com/macros/s/AKfycbzt3cs-uzpPrem6xRvRB2SKS3nLP3Sd4M-bkn8Woy6e8ABW7P619E4Pe3wNRhu6wZR-/exec', {
+            searchBtn.addEventListener('click', async () => {
+                const valorDocumento = document.querySelector('#documento_identidad')?.value.trim() || '';
+                const tipoDoc = document.querySelector('#select2-tipo_doc-container')?.textContent.trim() || '';
+                const nombreAsesor = window.nombreAsesor || '';
+
+                if (valorDocumento.length > 0) {
+                    // Espera a que el score sea válido
+                    const score = await waitForScoreValido();
+
+                    // Ahora sí, toma los datos ya cargados
+                    const nombre = document.querySelector('#cli_nom')?.value.trim() || '';
+                    const apellidoPaterno = document.querySelector('#cli_ape_pat')?.value.trim() || '';
+                    const apellidoMaterno = document.querySelector('#cli_ape_mat')?.value.trim() || '';
+
+                    const datosAEnviar = {
+                        documento: valorDocumento,
+                        tipo_documento: tipoDoc,
+                        score: score,
+                        nombre: nombre,
+                        apellido_paterno: apellidoPaterno,
+                        apellido_materno: apellidoMaterno,
+                        asesor: nombreAsesor
+                    };
+                    // Imprime todos los datos en consola
+                    console.log('Datos a enviar a Google Sheet:', datosAEnviar);
+
+                    fetch('https://script.google.com/macros/s/AKfycbwdGjqGxH_fxqZTgtpy9fIb3apLfqAxB-PHKk60FVwnpofFMnSNgmmlIMtG_l5Wwwsc/exec', {
                         method: 'POST',
                         mode: 'no-cors',
-                        body: JSON.stringify({
-                            documento: valorDocumento
-                        })
+                        body: JSON.stringify(datosAEnviar)
                     }).then(() => {
-                        console.log('Documento enviado a Google Sheet:', valorDocumento);
+                        console.log('Datos enviados a Google Sheet:', datosAEnviar);
                     }).catch(err => {
-                        console.error('Error al enviar documento:', err);
+                        console.error('Error al enviar datos:', err);
                     });
                 }
             });
