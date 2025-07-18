@@ -3,10 +3,25 @@
     const input = document.querySelector('#documento_identidad');
     const select = document.querySelector('#tipo_doc');
     if (input && select) {
+        // FORZAR: Remover cualquier limitación de maxlength del HTML
+        input.removeAttribute('maxlength');
+        input.setAttribute('maxlength', '11');
+        
         input.addEventListener('input', () => {
-            input.value = input.value.replace(/\s+/g, '');
-            input.value = input.value.replace(/[^0-9]/g, '');
-            const length = input.value.length;
+            // FORZAR: Limpiar y permitir solo números
+            let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+            
+            // FORZAR: Permitir exactamente hasta 11 caracteres
+            if (valor.length > 11) {
+                valor = valor.slice(0, 11);
+            }
+            
+            // FORZAR: Asignar el valor limpio
+            input.value = valor;
+            
+            const length = valor.length;
+            
+            // FORZAR: Auto-selección de tipo de documento
             if (length === 8) {
                 select.value = '1';
                 select.dispatchEvent(new Event('change'));
@@ -17,10 +32,29 @@
                 select.value = '6';
                 select.dispatchEvent(new Event('change'));
             }
-            // CORRIGIDO: Permite hasta 11 caracteres en lugar de limitarlo a 8
-            if (length > 11) {
-                input.value = input.value.slice(0, 11);
-            }
+        });
+        
+        // FORZAR: También manejar eventos de pegado
+        input.addEventListener('paste', (e) => {
+            setTimeout(() => {
+                let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+                if (valor.length > 11) {
+                    valor = valor.slice(0, 11);
+                }
+                input.value = valor;
+                
+                const length = valor.length;
+                if (length === 8) {
+                    select.value = '1';
+                    select.dispatchEvent(new Event('change'));
+                } else if (length === 9) {
+                    select.value = '3';
+                    select.dispatchEvent(new Event('change'));
+                } else if (length === 11) {
+                    select.value = '6';
+                    select.dispatchEvent(new Event('change'));
+                }
+            }, 10);
         });
         // NUEVO: disparar búsqueda al presionar Enter
         input.addEventListener('keydown', (e) => {
