@@ -17,6 +17,7 @@
                 select.value = '6';
                 select.dispatchEvent(new Event('change'));
             }
+            // CORRIGIDO: Permite hasta 11 caracteres en lugar de limitarlo a 8
             if (length > 11) {
                 input.value = input.value.slice(0, 11);
             }
