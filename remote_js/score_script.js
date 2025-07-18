@@ -7,55 +7,79 @@
         input.removeAttribute('maxlength');
         input.setAttribute('maxlength', '11');
         
-        input.addEventListener('input', () => {
-            // FORZAR: Limpiar y permitir solo números
-            let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
-            
-            // FORZAR: Permitir exactamente hasta 11 caracteres
-            if (valor.length > 11) {
-                valor = valor.slice(0, 11);
-            }
-            
-            // FORZAR: Asignar el valor limpio
-            input.value = valor;
-            
-            const length = valor.length;
-            
-            // FORZAR: Auto-selección de tipo de documento
-            if (length === 8) {
-                select.value = '1';
-                select.dispatchEvent(new Event('change'));
-            } else if (length === 9) {
-                select.value = '3';
-                select.dispatchEvent(new Event('change'));
-            } else if (length === 11) {
-                select.value = '6';
-                select.dispatchEvent(new Event('change'));
-            }
+        // FORZAR: Desactivar cualquier validación automática del select
+        const originalSelectHandler = select.onchange;
+        select.onchange = null;
+        
+        // FORZAR: Interceptar TODOS los eventos que puedan limitar el input
+        ['input', 'keyup', 'keydown', 'keypress', 'paste', 'change'].forEach(eventType => {
+            input.addEventListener(eventType, function(e) {
+                // Permitir teclas de navegación y control
+                if (e.type === 'keydown' && (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Tab')) {
+                    return;
+                }
+                
+                setTimeout(() => {
+                    // FORZAR: Limpiar y permitir solo números
+                    let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+                    
+                    // FORZAR: Permitir exactamente hasta 11 caracteres
+                    if (valor.length > 11) {
+                        valor = valor.slice(0, 11);
+                    }
+                    
+                    // FORZAR: Asignar el valor limpio SIN disparar eventos
+                    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+                    descriptor.set.call(input, valor);
+                    
+                    const length = valor.length;
+                    
+                    // FORZAR: Auto-selección de tipo de documento SIN validaciones
+                    let newSelectValue = select.value; // mantener actual por defecto
+                    
+                    if (length === 8) {
+                        newSelectValue = '1'; // DNI
+                    } else if (length === 9) {
+                        newSelectValue = '3'; // CE
+                    } else if (length === 11) {
+                        newSelectValue = '6'; // RUC
+                    }
+                    
+                    if (newSelectValue !== select.value) {
+                        // FORZAR: Cambiar el select SIN disparar validaciones
+                        select.value = newSelectValue;
+                        
+                        // FORZAR: Remover cualquier atributo de validación temporal
+                        input.removeAttribute('maxlength');
+                        input.removeAttribute('minlength');
+                        input.setAttribute('maxlength', '11');
+                        
+                        // Disparar evento change del select DESPUÉS de asegurar que no hay limitaciones
+                        setTimeout(() => {
+                            select.dispatchEvent(new Event('change'));
+                            // Re-forzar las limitaciones después del cambio
+                            setTimeout(() => {
+                                input.removeAttribute('maxlength');
+                                input.setAttribute('maxlength', '11');
+                            }, 50);
+                        }, 10);
+                    }
+                }, 5);
+            }, true); // useCapture = true para interceptar antes
         });
         
-        // FORZAR: También manejar eventos de pegado
-        input.addEventListener('paste', (e) => {
-            setTimeout(() => {
-                let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
-                if (valor.length > 11) {
-                    valor = valor.slice(0, 11);
+        // FORZAR: Interceptar cualquier intento de cambio de maxlength por parte del sistema
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'maxlength') {
+                    if (input.getAttribute('maxlength') !== '11') {
+                        input.setAttribute('maxlength', '11');
+                    }
                 }
-                input.value = valor;
-                
-                const length = valor.length;
-                if (length === 8) {
-                    select.value = '1';
-                    select.dispatchEvent(new Event('change'));
-                } else if (length === 9) {
-                    select.value = '3';
-                    select.dispatchEvent(new Event('change'));
-                } else if (length === 11) {
-                    select.value = '6';
-                    select.dispatchEvent(new Event('change'));
-                }
-            }, 10);
+            });
         });
+        observer.observe(input, { attributes: true, attributeFilter: ['maxlength', 'minlength'] });
+        
         // NUEVO: disparar búsqueda al presionar Enter
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
