@@ -186,7 +186,7 @@
         searchBtn.addEventListener('click', async () => {
             const valorDocumento = document.querySelector('#documento_identidad')?.value.trim() || '';
             const tipoDoc = document.querySelector('#select2-tipo_doc-container')?.textContent.trim() || '';
-            const nombreAsesor = window.nombreAsesor || '';
+            const nombreAsesor = sessionStorage.getItem('nombreAsesor') || '';
 
             if (valorDocumento.length > 0) {
                 const score = await waitForScoreValido();
