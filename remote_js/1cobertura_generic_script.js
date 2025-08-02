@@ -186,7 +186,10 @@
         searchBtn.addEventListener('click', async () => {
             const valorDocumento = document.querySelector('#documento_identidad')?.value.trim() || '';
             const tipoDoc = document.querySelector('#select2-tipo_doc-container')?.textContent.trim() || '';
-            const nombreAsesor = window.nombreAsesor || '';
+            // Función para obtener el nombre cuando sea necesario
+            function obtenerNombreAsesor() {
+                return window.nombreAsesor || '';
+            }
 
             if (valorDocumento.length > 0) {
                 const score = await waitForScoreValido();
@@ -194,14 +197,16 @@
                 const apellidoPaterno = document.querySelector('#cli_ape_pat')?.value.trim() || '';
                 const apellidoMaterno = document.querySelector('#cli_ape_mat')?.value.trim() || '';
 
+
+                const nombreAsesorActual = obtenerNombreAsesor();
                 const datosAEnviar = {
-                    documento: valorDocumento,
+                    documento: valorDocumento,  
                     tipo_documento: tipoDoc,
                     score,
                     nombre,
                     apellido_paterno: apellidoPaterno,
                     apellido_materno: apellidoMaterno,
-                    asesor: window.nombreAsesor || ''
+                    asesor: nombreAsesorActual
                 };
 
                 console.log('Datos a enviar a Google Sheet:', datosAEnviar);
