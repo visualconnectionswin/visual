@@ -180,45 +180,143 @@
         });
     }
 
-    // Enviar datos al hacer clic
-    const searchBtn = document.querySelector('#search_score_cliente');
-    if (searchBtn) {
-        searchBtn.addEventListener('click', async () => {
-            const valorDocumento = document.querySelector('#documento_identidad')?.value.trim() || '';
-            const tipoDoc = document.querySelector('#select2-tipo_doc-container')?.textContent.trim() || '';
-            const nombreAsesor = window.nombreAsesor || '';
+    // REEMPLAZAR el event listener en 1cobertura_generic_script.js con esto:
+// (Buscar la sección "Enviar datos al hacer clic" y reemplazarla completamente)
 
-            if (valorDocumento.length > 0) {
+// === DEBUGGING Y VERIFICACIÓN INICIAL ===
+console.log('=== SCRIPT COBERTURA INICIADO ===');
+console.log('window.nombreAsesor disponible:', typeof window.nombreAsesor !== 'undefined');
+console.log('window.nombreAsesor valor:', window.nombreAsesor);
+
+// === FUNCIÓN PARA VERIFICAR Y CAPTURAR EL NOMBRE ===
+function obtenerNombreAsesorSeguro() {
+    // Intentar múltiples formas de obtener el nombre
+    const metodos = [
+        () => window.nombreAsesor,
+        () => window['nombreAsesor'],
+        () => (function() { try { return eval('window.nombreAsesor'); } catch(e) { return null; } })()
+    ];
+    
+    for (let i = 0; i < metodos.length; i++) {
+        try {
+            const resultado = metodos[i]();
+            if (resultado && resultado !== 'undefined' && resultado.trim() !== '') {
+                console.log(`Nombre obtenido con método ${i+1}:`, resultado);
+                return resultado;
+            }
+        } catch (e) {
+            console.log(`Método ${i+1} falló:`, e.message);
+        }
+    }
+    
+    console.log('ADVERTENCIA: No se pudo obtener nombreAsesor por ningún método');
+    return '';
+}
+
+// === EVENT LISTENER CON DEBUGGING COMPLETO ===
+function configurarEventListener() {
+    const searchBtn = document.querySelector('#search_score_cliente');
+    if (!searchBtn) {
+        console.log('Botón #search_score_cliente no encontrado');
+        return;
+    }
+    
+    console.log('Configurando event listener en botón de búsqueda');
+    
+    searchBtn.addEventListener('click', async function() {
+        console.log('=== CLICK EN BOTÓN DE BÚSQUEDA ===');
+        
+        // Verificar datos básicos
+        const valorDocumento = document.querySelector('#documento_identidad')?.value.trim() || '';
+        const tipoDoc = document.querySelector('#select2-tipo_doc-container')?.textContent.trim() || '';
+        
+        console.log('Documento:', valorDocumento);
+        console.log('Tipo documento:', tipoDoc);
+        
+        // Obtener el nombre del asesor de forma segura
+        const nombreAsesor = obtenerNombreAsesorSeguro();
+        console.log('Nombre asesor obtenido:', `"${nombreAsesor}"`);
+        
+        if (valorDocumento.length > 0) {
+            try {
+                // Esperar por el score
+                console.log('Esperando score válido...');
                 const score = await waitForScoreValido();
+                console.log('Score obtenido:', score);
+                
+                // Obtener datos del cliente
                 const nombre = document.querySelector('#cli_nom')?.value.trim() || '';
                 const apellidoPaterno = document.querySelector('#cli_ape_pat')?.value.trim() || '';
                 const apellidoMaterno = document.querySelector('#cli_ape_mat')?.value.trim() || '';
-
+                
+                console.log('Datos del cliente:');
+                console.log('- Nombre:', nombre);
+                console.log('- Apellido paterno:', apellidoPaterno);
+                console.log('- Apellido materno:', apellidoMaterno);
+                
+                // Preparar datos para envío
                 const datosAEnviar = {
                     documento: valorDocumento,
                     tipo_documento: tipoDoc,
-                    score,
-                    nombre,
+                    score: score,
+                    nombre: nombre,
                     apellido_paterno: apellidoPaterno,
                     apellido_materno: apellidoMaterno,
-                    asesor: nombreAsesor
+                    asesor: nombreAsesor  // Usar la función segura
                 };
-
-                console.log('Datos a enviar a Google Sheet:', datosAEnviar);
-
+                
+                console.log('=== DATOS FINALES PARA ENVÍO ===');
+                console.log('Objeto completo:', datosAEnviar);
+                console.log('JSON string:', JSON.stringify(datosAEnviar));
+                
+                // Verificar específicamente el campo asesor
+                console.log('Campo asesor específicamente:');
+                console.log('- Tipo:', typeof datosAEnviar.asesor);
+                console.log('- Valor:', `"${datosAEnviar.asesor}"`);
+                console.log('- Longitud:', datosAEnviar.asesor.length);
+                console.log('- Es vacío:', datosAEnviar.asesor === '');
+                
+                // Realizar el envío
+                console.log('Iniciando fetch a Google Apps Script...');
+                
                 fetch('https://script.google.com/macros/s/AKfycbwdGjqGxH_fxqZTgtpy9fIb3apLfqAxB-PHKk60FVwnpofFMnSNgmmlIMtG_l5Wwwsc/exec', {
                     method: 'POST',
                     mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify(datosAEnviar)
-                }).then(() => {
-                    console.log('Datos enviados a Google Sheet:', datosAEnviar);
-                }).catch(err => {
-                    console.error('Error al enviar datos:', err);
+                })
+                .then(response => {
+                    console.log('Fetch completado - Response:', response);
+                    console.log('Datos enviados exitosamente a Google Sheet');
+                })
+                .catch(error => {
+                    console.error('Error en fetch:', error);
                 });
+                
+            } catch (error) {
+                console.error('Error en el proceso:', error);
             }
-        });
-    }
-    // === FIN: FUNCIONALIDADES DEL CÓDIGO 2 ===
+        } else {
+            console.log('No se envían datos - documento vacío');
+        }
+    });
+    
+    console.log('Event listener configurado correctamente');
+}
+
+// === CONFIGURAR TODO DESPUÉS DEL DELAY ===
+setTimeout(function() {
+    console.log('=== CONFIGURACIÓN DESPUÉS DEL DELAY ===');
+    console.log('window.nombreAsesor después del delay:', window.nombreAsesor);
+    
+    // Configurar el event listener
+    configurarEventListener();
+    
+    // Verificación final
+    console.log('Script de cobertura completamente configurado');
+}, 1500); // Aumentar el delay a 1.5 segundos
 
     // 1. Intentar hacer clic en el botón "Nuevo Lead"
     setTimeout(function() {
