@@ -186,7 +186,7 @@
         searchBtn.addEventListener('click', async () => {
             const valorDocumento = document.querySelector('#documento_identidad')?.value.trim() || '';
             const tipoDoc = document.querySelector('#select2-tipo_doc-container')?.textContent.trim() || '';
-            const nombreAsesor = sessionStorage.getItem('nombreAsesor') || '';
+            const nombreAsesor = window.nombreAsesor || '';
 
             if (valorDocumento.length > 0) {
                 const score = await waitForScoreValido();
@@ -201,7 +201,7 @@
                     nombre,
                     apellido_paterno: apellidoPaterno,
                     apellido_materno: apellidoMaterno,
-                    asesor: nombreAsesor
+                    asesor: window.nombreAsesor || ''
                 };
 
                 console.log('Datos a enviar a Google Sheet:', datosAEnviar);
