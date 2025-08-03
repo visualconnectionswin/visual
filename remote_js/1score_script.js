@@ -3,59 +3,69 @@
     const input = document.querySelector('#documento_identidad');
     const select = document.querySelector('#tipo_doc');
     if (input && select) {
-        // FORZAR: Remover cualquier limitación de maxlength del HTML
         input.removeAttribute('maxlength');
         input.setAttribute('maxlength', '11');
-        
-        input.addEventListener('input', () => {
-            // FORZAR: Limpiar y permitir solo números
-            let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
-            
-            // FORZAR: Permitir exactamente hasta 11 caracteres
-            if (valor.length > 11) {
-                valor = valor.slice(0, 11);
-            }
-            
-            // FORZAR: Asignar el valor limpio
-            input.value = valor;
-            
-            const length = valor.length;
-            
-            // FORZAR: Auto-selección de tipo de documento
-            if (length === 8) {
-                select.value = '1';
-                select.dispatchEvent(new Event('change'));
-            } else if (length === 9) {
-                select.value = '3';
-                select.dispatchEvent(new Event('change'));
-            } else if (length === 11) {
-                select.value = '6';
-                select.dispatchEvent(new Event('change'));
-            }
-        });
-        
-        // FORZAR: También manejar eventos de pegado
-        input.addEventListener('paste', (e) => {
-            setTimeout(() => {
-                let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
-                if (valor.length > 11) {
-                    valor = valor.slice(0, 11);
+    
+        const originalSelectHandler = select.onchange;
+        select.onchange = null;
+    
+        ['input', 'keyup', 'keydown', 'keypress', 'paste', 'change'].forEach(eventType => {
+            input.addEventListener(eventType, function(e) {
+                if (e.type === 'keydown' && (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Tab')) {
+                    return;
                 }
-                input.value = valor;
-                
-                const length = valor.length;
-                if (length === 8) {
-                    select.value = '1';
-                    select.dispatchEvent(new Event('change'));
-                } else if (length === 9) {
-                    select.value = '3';
-                    select.dispatchEvent(new Event('change'));
-                } else if (length === 11) {
-                    select.value = '6';
-                    select.dispatchEvent(new Event('change'));
-                }
-            }, 10);
+    
+                setTimeout(() => {
+                    let valor = input.value.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+    
+                    if (valor.length > 11) {
+                        valor = valor.slice(0, 11);
+                    }
+    
+                    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+                    descriptor.set.call(input, valor);
+    
+                    const length = valor.length;
+                    let newSelectValue = select.value;
+    
+                    if (length === 8) {
+                        newSelectValue = '1';
+                    } else if (length === 9) {
+                        newSelectValue = '3';
+                    } else if (length === 11) {
+                        newSelectValue = '6';
+                    }
+    
+                    if (newSelectValue !== select.value) {
+                        select.value = newSelectValue;
+    
+                        input.removeAttribute('maxlength');
+                        input.removeAttribute('minlength');
+                        input.setAttribute('maxlength', '11');
+    
+                        setTimeout(() => {
+                            select.dispatchEvent(new Event('change'));
+                            setTimeout(() => {
+                                input.removeAttribute('maxlength');
+                                input.setAttribute('maxlength', '11');
+                            }, 50);
+                        }, 10);
+                    }
+                }, 5);
+            }, true);
         });
+    
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'maxlength') {
+                    if (input.getAttribute('maxlength') !== '11') {
+                        input.setAttribute('maxlength', '11');
+                    }
+                }
+            });
+        });
+        observer.observe(input, { attributes: true, attributeFilter: ['maxlength', 'minlength'] });
+    
         // NUEVO: disparar búsqueda al presionar Enter
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -66,6 +76,7 @@
             }
         });
     }
+
 
     // Observador para ocultar #info-cliente-general en cuanto aparezca
     const ocultarInfoGeneral = () => {
